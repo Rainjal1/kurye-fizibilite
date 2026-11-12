@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kurye Fizibilite | Kuryeliğe Başlamadan Önce Hesapla</title>
+    <meta
+      name="description"
+      content="Kuryeliğe başlamak için maliyet, net kâr, başabaş noktası ve geri ödeme süresini ücretsiz hesapla."
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #0f172a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 8% 8%, rgba(56, 189, 248, 0.22), transparent 24%),
+          radial-gradient(circle at 92% 12%, rgba(249, 115, 22, 0.16), transparent 20%),
+          linear-gradient(145deg, #eef4ff 0%, #f8fafc 45%, #e8f1ff 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(37, 99, 235, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
+        background-size: 56px 56px;
+        -webkit-mask-image: radial-gradient(circle at 50% 0%, black, transparent 78%);
+        mask-image: radial-gradient(circle at 50% 0%, black, transparent 78%);
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 0 16px 48px;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        margin: 0 -16px;
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.65);
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(18px);
+      }
+
+      .topbar-inner,
+      .brand,
+      .hero,
+      .hero-copy,
+      .hero-panel,
+      .calculator-grid {
+        display: flex;
+      }
+
+      .topbar-inner {
+        max-width: 1128px;
+        margin: 0 auto;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #22d3ee);
+        box-shadow: 0 14px 28px -16px rgba(37, 99, 235, 0.8);
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .brand span {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+      }
+
+      .free-note {
+        display: none;
+        border: 1px solid #fed7aa;
+        border-radius: 999px;
+        background: #fff7ed;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #c2410c;
+      }
+
+      .card {
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 18px 45px -24px rgba(15, 23, 42, 0.28);
+        backdrop-filter: blur(18px);
+      }
+
+      .hero {
+        margin-top: 32px;
+        padding: 30px;
+        align-items: center;
+        gap: 30px;
+      }
+
+      .hero-copy {
+        flex: 1 1 520px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        border-radius: 999px;
+        background: rgba(239, 246, 255, 0.85);
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #1d4ed8;
+      }
+
+      .badge::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #f97316;
+      }
+
+      h1 {
+        margin: 16px 0 0;
+        font-size: clamp(30px, 5vw, 52px);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
+
+      h1 span {
+        background: linear-gradient(90deg, #1d4ed8, #2563eb, #06b6d4);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .hero-copy p {
+        max-width: 660px;
+        margin: 16px 0 0;
+        color: #475569;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      .hero-panel {
+        flex: 1 1 300px;
+        flex-direction: column;
+        gap: 12px;
+        border: 1px solid #dbeafe;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #eff6ff, #fff 55%, #fff7ed);
+        padding: 20px;
+      }
+
+      .hero-panel-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .hero-icon {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 auto;
+        border-radius: 14px;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 800;
+        background: #2563eb;
+        box-shadow: 0 14px 26px -16px rgba(37, 99, 235, 0.75);
+      }
+
+      .hero-panel-item strong,
+      .mini-card strong {
+        display: block;
+        font-size: 14px;
+        color: #0f172a;
+      }
+
+      .hero-panel-item span,
+      .mini-card span {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .mini-card {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 12px;
+      }
+
+      .mini-card strong {
+        color: #1d4ed8;
+      }
+
+      .mini-card:last-child strong {
+        color: #ea580c;
+      }
+
+      .calculator-grid {
+        margin-top: 24px;
+        align-items: flex-start;
+        gap: 24px;
+      }
+
+      .form-panel {
+        flex: 1 1 620px;
+        padding: 26px;
+      }
+
+      .results-panel {
+        flex: 1 1 370px;
+        padding: 26px;
+        position: sticky;
+        top: 90px;
+      }
+
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      h2 {
+        margin: 12px 0 0;
+        font-size: clamp(20px, 3vw, 26px);
+        letter-spacing: -0.03em;
+      }
+
+      .section-note {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 14px;
+      }
+
+      h3 {
+        margin: 28px 0 12px;
+        color: #1e40af;
+        font-size: 13px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+      }
+
+      label {
+        display: block;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.75));
+        padding: 12px;
+        transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      label:hover,
+      label:focus-within {
+        border-color: rgba(37, 99, 235, 0.36);
+        box-shadow: 0 14px 30px -22px rgba(37, 99, 235, 0.55);
+        transform: translateY(-1px);
+      }
+
+      label span {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.36);
+        border-radius: 12px;
+        padding: 11px 10px;
+        font: inherit;
+        font-weight: 650;
+        color: #172554;
+        background: rgba(255, 255, 255, 0.85);
+        transition: border-color 180ms ease, box-shadow 180ms ease;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: rgba(37, 99, 235, 0.72);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
+      }
+
+      button {
+        margin-top: 20px;
+        border: 1px solid #fed7aa;
+        border-radius: 12px;
+        background: #fff7ed;
+        color: #c2410c;
+        padding: 11px 16px;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+      }
+
+      button:hover {
+        border-color: #fdba74;
+        background: #ffedd5;
+        transform: translateY(-2px);
+      }
+
+      button:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
+      }
+
+      .results {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .result {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 14px;
+        overflow-wrap: anywhere;
+        transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      }
+
+      .result:hover {
+        border-color: rgba(37, 99, 235, 0.28);
+        box-shadow: 0 20px 34px -28px rgba(37, 99, 235, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .result span {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+      }
+
+      .result strong {
+        display: block;
+        margin-top: 5px;
+        font-size: clamp(18px, 2vw, 24px);
+        letter-spacing: -0.03em;
+      }
+
+      .net-profit {
+        grid-column: 1 / -1;
+        border-color: rgba(255, 255, 255, 0.24);
+        color: #fff;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb 55%, #0ea5e9);
+        box-shadow: 0 22px 45px -26px rgba(37, 99, 235, 0.75);
+      }
+
+      .net-profit span {
+        color: #dbeafe;
+      }
+
+      .payback {
+        border-color: rgba(249, 115, 22, 0.26);
+        background: linear-gradient(135deg, #fff7ed, rgba(255, 255, 255, 0.9));
+      }
+
+      .payback strong {
+        color: #c2410c;
+      }
+
+      .startup-total {
+        grid-column: 1 / -1;
+      }
+
+      .assumptions {
+        margin-top: 20px;
+        border: 1px solid #dbeafe;
+        border-radius: 18px;
+        background: rgba(239, 246, 255, 0.72);
+        padding: 16px;
+      }
+
+      .assumptions p {
+        margin: 0;
+        color: #1e40af;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .assumptions ul {
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        color: #475569;
+        font-size: 12px;
+        line-height: 1.65;
+      }
+
+      .assumptions li {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .assumptions li::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        flex: 0 0 auto;
+        margin-top: 6px;
+        border-radius: 999px;
+        background: #f97316;
+      }
+
+      .warning {
+        margin: 18px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      footer {
+        margin-top: 32px;
+        padding: 20px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      footer strong {
+        display: block;
+        margin-top: 6px;
+        color: #475569;
+      }
+
+      @media (min-width: 720px) {
+        .free-note {
+          display: inline-flex;
+        }
+      }
+
+      @media (max-width: 899px) {
+        .hero,
+        .calculator-grid {
+          flex-direction: column;
+        }
+
+        .results-panel {
+          position: static;
+          width: 100%;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="brand">
+            <div class="brand-mark">KF</div>
+            <div>
+              <strong>Kurye Fizibilite</strong>
+              <span>2026 Türkiye verileriyle</span>
+            </div>
+          </div>
+          <span class="free-note">Ücretsiz ve açık kaynak</span>
+        </div>
+      </header>
+
+      <section class="card hero">
+        <div class="hero-copy">
+          <span class="badge">Hızlı fizibilite hesabı</span>
+          <h1>Kuryeliğe başlamadan <span>gerçekçi bir bütçe</span> çıkar</h1>
+          <p>
+            Paket sayısından Bağ-Kur primine kadar tüm kalemleri düzenle; aylık net kârını,
+            başabaş noktanı ve geri ödeme süreni anında gör.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <div class="hero-panel-item">
+            <div class="hero-icon">₺</div>
+            <div>
+              <strong>Şeffaf hesaplama</strong>
+              <span>Her varsayım görünür ve düzenlenebilir</span>
+            </div>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <strong>Anlık sonuç</strong>
+              <span>Yükleme yok</span>
+            </div>
+            <div class="mini-card">
+              <strong>Mobil uyumlu</strong>
+              <span>Tek elle kullan</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="calculator-grid">
+        <section class="card form-panel">
+          <div class="section-head">
+            <div>
+              <span class="badge">1. Adım</span>
+              <h2>Hesaplama Bilgileri</h2>
+              <p class="section-note">Tüm değerleri kendi senaryona göre güncelleyebilirsin.</p>
+            </div>
+            <button id="resetButton" type="button">Varsayılana dön</button>
+          </div>
+
+          <h3>Çalışma Parametreleri</h3>
+          <div class="grid">
+            <label>
+              <span>Günlük paket</span>
+              <input id="dailyPackages" type="number" min="0" step="1" value="30" />
+            </label>
+            <label>
+              <span>Ortalama paket ücreti (₺)</span>
+              <input id="averagePackagePrice" type="number" min="0" step="1" value="105" />
+            </label>
+            <label>
+              <span>Aylık çalışma günü</span>
+              <input id="workingDaysPerMonth" type="number" min="0" step="1" value="24" />
+            </label>
+          </div>
+
+          <h3>Başlangıç Maliyetleri</h3>
+          <div class="grid">
+            <label>
+              <span>Araç (₺)</span>
+              <input id="vehicleCost" type="number" min="0" step="100" value="95000" />
+            </label>
+            <label>
+              <span>Ekipman (₺)</span>
+              <input id="equipmentCost" type="number" min="0" step="100" value="8000" />
+            </label>
+            <label>
+              <span>Belgeler (₺)</span>
+              <input id="licenseAndDocsCost" type="number" min="0" step="100" value="12000" />
+            </label>
+            <label>
+              <span>Şirket kuruluşu (₺)</span>
+              <input id="companySetupCost" type="number" min="0" step="100" value="3500" />
+            </label>
+          </div>
+
+          <h3>Aylık Giderler</h3>
+          <div class="grid">
+            <label>
+              <span>Yakıt / elektrik (₺)</span>
+              <input id="fuelOrElectricityMonthly" type="number" min="0" step="50" value="4500" />
+            </label>
+            <label>
+              <span>Bakım (₺)</span>
+              <input id="maintenanceMonthly" type="number" min="0" step="50" value="1800" />
+            </label>
+            <label>
+              <span>Sigorta (₺)</span>
+              <input id="insuranceMonthly" type="number" min="0" step="50" value="900" />
+            </label>
+            <label>
+              <span>Bağ-Kur (₺)</span>
+              <input id="bagkurMonthly" type="number" min="0" step="50" value="11808" />
+            </label>
+            <label>
+              <span>Muhasebe (₺)</span>
+              <input id="accountingMonthly" type="number" min="0" step="50" value="1500" />
+            </label>
+            <label>
+              <span>Telefon / internet (₺)</span>
+              <input id="phoneInternetMonthly" type="number" min="0" step="50" value="600" />
+            </label>
+            <label>
+              <span>Diğer (₺)</span>
+              <input id="otherMonthly" type="number" min="0" step="50" value="500" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card results-panel">
+          <span class="badge">2. Adım</span>
+          <h2>Sonuçlar</h2>
+          <p class="section-note">Değerleri değiştirdikçe hesaplama anında yenilenir.</p>
+
+          <div class="results">
+            <div class="result net-profit">
+              <span>Aylık net kâr</span>
+              <strong id="monthlyNetProfit">₺0</strong>
+            </div>
+            <div class="result">
+              <span>Aylık brüt ciro</span>
+              <strong id="monthlyGrossRevenue">₺0</strong>
+            </div>
+            <div class="result">
+              <span>Aylık toplam gider</span>
+              <strong id="monthlyTotalExpenses">₺0</strong>
+            </div>
+            <div class="result payback">
+              <span>Geri ödeme süresi</span>
+              <strong id="paybackMonths">-</strong>
+            </div>
+            <div class="result">
+              <span>Başabaş günlük paket</span>
+              <strong id="breakEvenPackagesPerDay">-</strong>
+            </div>
+            <div class="result startup-total">
+              <span>Toplam başlangıç maliyeti</span>
+              <strong id="totalStartupCost">₺0</strong>
+            </div>
+          </div>
+
+          <div class="assumptions">
+            <p>Önemli Notlar</p>
+            <ul>
+              <li>Paket başı ücret, 2026 platform tarifelerinin karma ortalamasıdır.</li>
+              <li>Varsayılan Bağ-Kur primi, 2026 brüt asgari ücrete göre aylık 11.808 TL seviyesindedir.</li>
+              <li>Yakıt / elektrik ve bakım tutarları Kasım 2026 fiyat seviyelerine göre tahminidir.</li>
+              <li>Bu bir tahmindir, yatırım tavsiyesi değildir.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <footer class="card">
+        Bu araç yalnızca bilgilendirme amaçlıdır. Yatırım tavsiyesi değildir. Rakamlar tahmindir ve kişiden kişiye değişir.
+        <strong>Açık kaynak • MIT Lisans • Kasım 2026 varsayılanları</strong>
+      </footer>
+    </main>
+
+    <script>
+      const inputs = {
+        dailyPackages: document.getElementById("dailyPackages"),
+        averagePackagePrice: document.getElementById("averagePackagePrice"),
+        workingDaysPerMonth: document.getElementById("workingDaysPerMonth"),
+        vehicleCost: document.getElementById("vehicleCost"),
+        equipmentCost: document.getElementById("equipmentCost"),
+        licenseAndDocsCost: document.getElementById("licenseAndDocsCost"),
+        companySetupCost: document.getElementById("companySetupCost"),
+        fuelOrElectricityMonthly: document.getElementById("fuelOrElectricityMonthly"),
+        maintenanceMonthly: document.getElementById("maintenanceMonthly"),
+        insuranceMonthly: document.getElementById("insuranceMonthly"),
+        bagkurMonthly: document.getElementById("bagkurMonthly"),
+        accountingMonthly: document.getElementById("accountingMonthly"),
+        phoneInternetMonthly: document.getElementById("phoneInternetMonthly"),
+        otherMonthly: document.getElementById("otherMonthly"),
+      };
+
+      const defaults = Object.fromEntries(
+        Object.entries(inputs).map(([key, input]) => [key, input.value])
+      );
+
+      function numberValue(input) {
+        const value = Number(input.value);
+        return Number.isFinite(value) && value >= 0 ? value : 0;
+      }
+
+      function formatTRY(value) {
+        return new Intl.NumberFormat("tr-TR", {
+          style: "currency",
+          currency: "TRY",
+          maximumFractionDigits: 0,
+        }).format(value);
+      }
+
+      function calculate() {
+        const values = Object.fromEntries(
+          Object.entries(inputs).map(([key, input]) => [key, numberValue(input)])
+        );
+
+        const monthlyGrossRevenue =
+          values.dailyPackages * values.averagePackagePrice * values.workingDaysPerMonth;
+        const monthlyTotalExpenses =
+          values.fuelOrElectricityMonthly +
+          values.maintenanceMonthly +
+          values.insuranceMonthly +
+          values.bagkurMonthly +
+          values.accountingMonthly +
+          values.phoneInternetMonthly +
+          values.otherMonthly;
+        const monthlyNetProfit = monthlyGrossRevenue - monthlyTotalExpenses;
+        const totalStartupCost =
+          values.vehicleCost + values.equipmentCost + values.licenseAndDocsCost + values.companySetupCost;
+        const paybackMonths =
+          monthlyNetProfit > 0 ? Math.ceil(totalStartupCost / monthlyNetProfit) : null;
+        const breakEvenPackagesPerDay =
+          values.averagePackagePrice > 0 && values.workingDaysPerMonth > 0
+            ? Math.ceil((monthlyTotalExpenses / values.averagePackagePrice / values.workingDaysPerMonth) * 10) / 10
+            : null;
+
+        document.getElementById("monthlyGrossRevenue").textContent = formatTRY(monthlyGrossRevenue);
+        document.getElementById("monthlyTotalExpenses").textContent = formatTRY(monthlyTotalExpenses);
+        document.getElementById("monthlyNetProfit").textContent = formatTRY(monthlyNetProfit);
+        document.getElementById("totalStartupCost").textContent = formatTRY(totalStartupCost);
+        document.getElementById("paybackMonths").textContent =
+          paybackMonths === null ? "Kâr etmiyor" : `${paybackMonths} ay`;
+        document.getElementById("breakEvenPackagesPerDay").textContent =
+          breakEvenPackagesPerDay === null ? "-" : `${breakEvenPackagesPerDay} paket`;
+      }
+
+      Object.values(inputs).forEach((input) => {
+        input.addEventListener("input", calculate);
+      });
+
+      document.getElementById("resetButton").addEventListener("click", () => {
+        Object.entries(defaults).forEach(([key, value]) => {
+          inputs[key].value = value;
+        });
+        calculate();
+      });
+
+      calculate();
+    </script>
+  </body>
+</html>
