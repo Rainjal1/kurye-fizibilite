@@ -39,6 +39,15 @@ Araç şunları hesaplar:
 - Gereksiz bağımlılık ekleme.
 - Türkçe arayüz (değişken isimleri İngilizce olabilir, UI metinleri Türkçe).
 
+## Git Güncelleme Kuralı
+
+- Her tamamlanan değişiklik grubundan sonra ilgili dosyaları Git'e ekle (`git add`).
+- Değişikliği açıklayan kısa ve net bir commit mesajı oluştur (`git commit`).
+- Commit sonrası mevcut dalı uzak repoya gönder (`git push`).
+- Sadece kendi yaptığın ve görevle ilgili değişiklikleri commit et; kullanıcının mevcut, ilgisiz değişikliklerini dahil etme.
+- Push başarısız olursa veya uzak depo tanımlı değilse durumu kullanıcıya açıkça bildir.
+- Hassas veri, anahtar veya `.env` dosyası gönderme.
+
 ## Dosya Sorumlulukları
 
 | Dosya / Klasör              | Sorumluluk                                      |
