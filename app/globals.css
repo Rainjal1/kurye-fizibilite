@@ -57,14 +57,6 @@ body {
   color: var(--strong-foreground);
 }
 
-.field-label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--muted-foreground);
-}
-
 @layer components {
   .app-shell {
     min-height: 100vh;
@@ -88,29 +80,129 @@ body {
     border-radius: 1.25rem;
   }
 
-  .field-shell {
-    border-radius: 0.75rem;
+  .sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
     border: 1px solid var(--surface-border);
+    border-radius: 0.6rem;
+    background: var(--surface-strong);
+  }
+
+  @media (min-width: 1024px) {
+    .sheet-grid {
+      grid-template-columns:
+        minmax(130px, 1.1fr) minmax(112px, 0.9fr)
+        minmax(130px, 1.1fr) minmax(112px, 0.9fr);
+    }
+  }
+
+  .sheet-cell {
+    display: grid;
+    min-height: 2.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 108px);
+    align-items: center;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+    transition: background-color 120ms ease;
+  }
+
+  .sheet-cell:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .sheet-grid > .sheet-cell:first-child {
+    border-right: 1px solid var(--surface-border);
+  }
+
+  @media (min-width: 1024px) {
+    .sheet-grid > .sheet-cell:nth-child(4n + 1),
+    .sheet-grid > .sheet-cell:nth-child(4n + 2) {
+      border-right: 1px solid var(--surface-border);
+    }
+  }
+
+  .sheet-cell:hover {
     background: var(--surface-soft);
-    padding: 0.5rem;
   }
 
-  .field-shell:focus-within {
-    border-color: rgba(37, 99, 235, 0.48);
+  .sheet-cell:focus-within {
+    background: rgba(37, 99, 235, 0.06);
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.48);
   }
 
-  .field-input {
+  .sheet-cell-label {
+    overflow: hidden;
+    padding-left: 0.65rem;
+    padding-right: 0.5rem;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+  }
+
+  .sheet-input {
     width: 100%;
+    min-height: 2.25rem;
     border: 0;
+    border-left: 1px solid var(--surface-border);
     background: transparent;
-    padding: 0.25rem 0;
+    padding: 0 0.65rem;
+    text-align: right;
     font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
     font-weight: 700;
     color: var(--field-foreground);
   }
 
-  .field-input:focus {
+  .sheet-input:focus {
     outline: none;
+  }
+
+  .sheet-input::-webkit-outer-spin-button,
+  .sheet-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .sheet-input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .sheet-input-text {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .dynamic-expense-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 116px 36px;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid var(--surface-border);
+    border-radius: 0.5rem;
+    background: var(--surface-strong);
+  }
+
+  .dynamic-expense-grid > .sheet-cell {
+    border-bottom: 0;
+  }
+
+  .dynamic-expense-grid > .sheet-cell:nth-child(2) {
+    grid-template-columns: minmax(0, 1fr);
+    border-left: 1px solid var(--surface-border);
+    border-right: 1px solid var(--surface-border);
+  }
+
+  .dynamic-expense-grid > .sheet-cell:nth-child(2) .sheet-cell-label {
+    display: none;
+  }
+
+  .dynamic-expense-grid > .sheet-cell:nth-child(2) .sheet-input {
+    border-left: 0;
   }
 
   .result-card {

@@ -113,25 +113,25 @@ export default function Calculator() {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             <FormSection title="Gelirler">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <NumberField
+              <div className="sheet-grid">
+                <NumberCell
                   label="Günlük paket"
                   value={inputs.dailyPackages}
                   onChange={(value) => update("dailyPackages", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Paket ücreti (₺)"
                   value={inputs.averagePackagePrice}
                   onChange={(value) => update("averagePackagePrice", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Aylık gün"
                   value={inputs.workingDaysPerMonth}
                   onChange={(value) => update("workingDaysPerMonth", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Grafik ufku (ay)"
                   value={inputs.projectionMonths}
                   onChange={(value) => update("projectionMonths", value)}
@@ -148,7 +148,7 @@ export default function Calculator() {
                   <span>Ekipman kalemlerini düzenle</span>
                   <strong>{formatTRY(result.equipmentCost)}</strong>
                 </summary>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {inputs.equipmentItems.map((item) => (
                     <ExpenseEditor
                       key={item.id}
@@ -177,18 +177,18 @@ export default function Calculator() {
             </FormSection>
 
             <FormSection title="Diğer Başlangıç Maliyetleri">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <NumberField
+              <div className="sheet-grid">
+                <NumberCell
                   label="Araç (₺)"
                   value={inputs.vehicleCost}
                   onChange={(value) => update("vehicleCost", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Belgeler (₺)"
                   value={inputs.licenseAndDocsCost}
                   onChange={(value) => update("licenseAndDocsCost", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Şirket kuruluşu (₺)"
                   value={inputs.companySetupCost}
                   onChange={(value) => update("companySetupCost", value)}
@@ -200,28 +200,28 @@ export default function Calculator() {
             </FormSection>
 
             <FormSection title="Aylık Sabit Giderler">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                <NumberField
+              <div className="sheet-grid">
+                <NumberCell
                   label="Sigorta"
                   value={inputs.insuranceMonthly}
                   onChange={(value) => update("insuranceMonthly", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Bağ-Kur"
                   value={inputs.bagkurMonthly}
                   onChange={(value) => update("bagkurMonthly", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Muhasebe"
                   value={inputs.accountingMonthly}
                   onChange={(value) => update("accountingMonthly", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Telefon / internet"
                   value={inputs.phoneInternetMonthly}
                   onChange={(value) => update("phoneInternetMonthly", value)}
                 />
-                <NumberField
+                <NumberCell
                   label="Diğer"
                   value={inputs.otherMonthly}
                   onChange={(value) => update("otherMonthly", value)}
@@ -238,15 +238,15 @@ export default function Calculator() {
             </FormSection>
 
             <FormSection title="Aylık Değişken Giderler">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                <NumberField
+              <div className="sheet-grid">
+                <NumberCell
                   label="Yakıt / elektrik"
                   value={inputs.fuelOrElectricityMonthly}
                   onChange={(value) =>
                     update("fuelOrElectricityMonthly", value)
                   }
                 />
-                <NumberField
+                <NumberCell
                   label="Bakım ve lastik"
                   value={inputs.maintenanceMonthly}
                   onChange={(value) => update("maintenanceMonthly", value)}
@@ -400,7 +400,7 @@ function FormSection({
   );
 }
 
-function NumberField({
+function NumberCell({
   label,
   value,
   onChange,
@@ -410,13 +410,13 @@ function NumberField({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="field-shell block">
-      <span className="field-label">{label}</span>
+    <label className="sheet-cell">
+      <span className="sheet-cell-label">{label}</span>
       <input
         type="number"
         inputMode="decimal"
         min={0}
-        className="field-input"
+        className="sheet-input"
         value={value}
         onChange={(event) => onChange(Number(event.target.value) || 0)}
       />
@@ -444,7 +444,7 @@ function CustomExpenseList({
   addLabel: string;
 }) {
   return (
-    <div className="mt-3 space-y-2">
+    <div className="mt-1.5 space-y-1.5">
       {items.map((item) => (
         <ExpenseEditor
           key={item.id}
@@ -474,24 +474,24 @@ function ExpenseEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_120px_40px] items-end gap-2">
-      <label className="field-shell block">
-        <span className="field-label">Kalem</span>
+    <div className="dynamic-expense-grid">
+      <label className="sheet-cell">
+        <span className="sheet-cell-label">Gider adı</span>
         <input
           type="text"
-          className="field-input"
+          className="sheet-input sheet-input-text"
           value={item.label}
           placeholder="Örn. Yıllık bakım"
           onChange={(event) => onChange({ label: event.target.value })}
         />
       </label>
-      <label className="field-shell block">
-        <span className="field-label">Tutar (₺)</span>
+      <label className="sheet-cell">
+        <span className="sheet-cell-label">Tutar (₺)</span>
         <input
           type="number"
           inputMode="decimal"
           min={0}
-          className="field-input"
+          className="sheet-input"
           value={item.amount}
           onChange={(event) =>
             onChange({ amount: Number(event.target.value) || 0 })
@@ -504,7 +504,7 @@ function ExpenseEditor({
         className="danger-button"
         aria-label="Kalemi sil"
       >
-        Sil
+        ×
       </button>
     </div>
   );
