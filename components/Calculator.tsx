@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CalculatorInputs, ExpenseItem, ProjectionPoint } from "@/lib/types";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CalculatorInputs,
+  ExpenseItem,
+  ProjectionPoint,
+} from "@/lib/types";
 import { DEFAULT_INPUTS } from "@/lib/constants";
 import { calculateFeasibility, formatTRY } from "@/lib/calculations";
 
@@ -10,15 +14,39 @@ type ExpenseListKey =
   | "customFixedExpenses"
   | "customVariableExpenses";
 
+type Theme = "light" | "dark";
+
 export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
+  const [theme, setTheme] = useState<Theme>("light");
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem("theme") as Theme | null;
+    const initialTheme =
+      storedTheme ??
+      (window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light");
+
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+  }, []);
+
+  function toggleTheme() {
+    setTheme((currentTheme) => {
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      document.documentElement.classList.toggle("dark", nextTheme === "dark");
+      window.localStorage.setItem("theme", nextTheme);
+      return nextTheme;
+    });
+  }
 
   function update<K extends keyof CalculatorInputs>(
     key: K,
     value: CalculatorInputs[K]
   ) {
-    setInputs((prev) => ({ ...prev, [key]: value }));
+    setInputs((previous) => ({ ...previous, [key]: value }));
   }
 
   function updateExpenseItem(
@@ -26,9 +54,9 @@ export default function Calculator() {
     id: string,
     changes: Partial<Pick<ExpenseItem, "label" | "amount">>
   ) {
-    setInputs((prev) => ({
-      ...prev,
-      [listKey]: prev[listKey].map((item) =>
+    setInputs((previous) => ({
+      ...previous,
+      [listKey]: previous[listKey].map((item) =>
         item.id === id ? { ...item, ...changes } : item
       ),
     }));
@@ -47,138 +75,139 @@ export default function Calculator() {
       amount: 0,
     };
 
-    setInputs((prev) => ({ ...prev, [listKey]: [...prev[listKey], newItem] }));
+    setInputs((previous) => ({
+      ...previous,
+      [listKey]: [...previous[listKey], newItem],
+    }));
   }
 
   function removeExpenseItem(listKey: ExpenseListKey, id: string) {
-    setInputs((prev) => ({
-      ...prev,
-      [listKey]: prev[listKey].filter((item) => item.id !== id),
+    setInputs((previous) => ({
+      ...previous,
+      [listKey]: previous[listKey].filter((item) => item.id !== id),
     }));
   }
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-        <section className="glass-card soft-appear p-5 sm:p-7">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr] xl:items-start">
+        <section className="glass-card p-4 sm:p-5">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <span className="section-badge">1. Adım</span>
-              <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+              <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
                 Hesaplama Bilgileri
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Tüm değerleri kendi senaryona göre güncelleyebilirsin.
-              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setInputs(DEFAULT_INPUTS)}
-              className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-200"
-            >
-              Varsayılana dön
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={toggleTheme} className="small-action-button">
+                {theme === "dark" ? "Aydınlık mod" : "Karanlık mod"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputs(DEFAULT_INPUTS)}
+                className="small-action-button"
+              >
+                Varsayılana dön
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-7">
-            <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800">
-                Çalışma Parametreleri
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-5">
+            <FormSection title="Gelirler">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <NumberField
-                  label="Günlük Paket"
+                  label="Günlük paket"
                   value={inputs.dailyPackages}
                   onChange={(value) => update("dailyPackages", value)}
                 />
                 <NumberField
-                  label="Ortalama Paket Ücreti (₺)"
+                  label="Paket ücreti (₺)"
                   value={inputs.averagePackagePrice}
                   onChange={(value) => update("averagePackagePrice", value)}
                 />
                 <NumberField
-                  label="Aylık Çalışma Günü"
+                  label="Aylık gün"
                   value={inputs.workingDaysPerMonth}
                   onChange={(value) => update("workingDaysPerMonth", value)}
                 />
                 <NumberField
-                  label="Grafik Ufku (ay)"
+                  label="Grafik ufku (ay)"
                   value={inputs.projectionMonths}
                   onChange={(value) => update("projectionMonths", value)}
                 />
               </div>
-            </div>
-
-            <div>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-blue-800">
-                  Ekipman Listesi
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => addExpenseItem("equipmentItems")}
-                  className="small-action-button"
-                >
-                  Ekle
-                </button>
-              </div>
-              <p className="mb-3 text-xs leading-relaxed text-slate-500">
-                Uber Eats, Uber Moto ve Türkiye motosiklet güvenlik gereksinimleri
-                referans alınmıştır. Isı yalıtımlı çanta en az 44x35x40 cm olmalıdır.
+              <p className="text-muted mt-2 text-xs font-semibold">
+                Tahmini aylık brüt ciro: {formatTRY(result.monthlyGrossRevenue)}
               </p>
-              <div className="space-y-3">
-                {inputs.equipmentItems.map((item) => (
-                  <ExpenseEditor
-                    key={item.id}
-                    item={item}
-                    onChange={(changes) =>
-                      updateExpenseItem("equipmentItems", item.id, changes)
-                    }
-                    onRemove={() => removeExpenseItem("equipmentItems", item.id)}
-                  />
-                ))}
-              </div>
-              <div className="expense-total">
-                <span>Ekipman toplamı</span>
-                <span>{formatTRY(result.equipmentCost)}</span>
-              </div>
-            </div>
+            </FormSection>
 
-            <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800">
-                Başlangıç Maliyetleri
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormSection title="Ekipman">
+              <details className="collapsible-panel">
+                <summary>
+                  <span>Ekipman kalemlerini düzenle</span>
+                  <strong>{formatTRY(result.equipmentCost)}</strong>
+                </summary>
+                <div className="space-y-2">
+                  {inputs.equipmentItems.map((item) => (
+                    <ExpenseEditor
+                      key={item.id}
+                      item={item}
+                      onChange={(changes) =>
+                        updateExpenseItem("equipmentItems", item.id, changes)
+                      }
+                      onRemove={() =>
+                        removeExpenseItem("equipmentItems", item.id)
+                      }
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addExpenseItem("equipmentItems")}
+                    className="small-action-button"
+                  >
+                    Ekipman ekle
+                  </button>
+                </div>
+              </details>
+              <p className="text-muted mt-2 text-xs">
+                Uber Eats ve Türkiye motosiklet güvenlik gereksinimleri referans
+                alınmıştır. Isı yalıtımlı çanta en az 44x35x40 cm olmalıdır.
+              </p>
+            </FormSection>
+
+            <FormSection title="Diğer Başlangıç Maliyetleri">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <NumberField
-                  label="Araç Maliyeti (₺)"
+                  label="Araç (₺)"
                   value={inputs.vehicleCost}
                   onChange={(value) => update("vehicleCost", value)}
                 />
                 <NumberField
-                  label="Belgeler (SRC, psikoteknik...)"
+                  label="Belgeler (₺)"
                   value={inputs.licenseAndDocsCost}
                   onChange={(value) => update("licenseAndDocsCost", value)}
                 />
                 <NumberField
-                  label="Şirket Kuruluşu"
+                  label="Şirket kuruluşu (₺)"
                   value={inputs.companySetupCost}
                   onChange={(value) => update("companySetupCost", value)}
                 />
               </div>
-            </div>
+              <p className="text-muted mt-2 text-xs font-semibold">
+                Toplam başlangıç maliyeti: {formatTRY(result.totalStartupCost)}
+              </p>
+            </FormSection>
 
-            <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800">
-                Aylık Sabit Giderler
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormSection title="Aylık Sabit Giderler">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 <NumberField
                   label="Sigorta"
                   value={inputs.insuranceMonthly}
                   onChange={(value) => update("insuranceMonthly", value)}
                 />
                 <NumberField
-                  label="Bağ-Kur Primi"
+                  label="Bağ-Kur"
                   value={inputs.bagkurMonthly}
                   onChange={(value) => update("bagkurMonthly", value)}
                 />
@@ -188,7 +217,7 @@ export default function Calculator() {
                   onChange={(value) => update("accountingMonthly", value)}
                 />
                 <NumberField
-                  label="Telefon / İnternet"
+                  label="Telefon / internet"
                   value={inputs.phoneInternetMonthly}
                   onChange={(value) => update("phoneInternetMonthly", value)}
                 />
@@ -198,79 +227,49 @@ export default function Calculator() {
                   onChange={(value) => update("otherMonthly", value)}
                 />
               </div>
-              <div className="mt-4 space-y-3">
-                {inputs.customFixedExpenses.map((item) => (
-                  <ExpenseEditor
-                    key={item.id}
-                    item={item}
-                    onChange={(changes) =>
-                      updateExpenseItem("customFixedExpenses", item.id, changes)
-                    }
-                    onRemove={() =>
-                      removeExpenseItem("customFixedExpenses", item.id)
-                    }
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => addExpenseItem("customFixedExpenses")}
-                className="small-action-button mt-4"
-              >
-                Sabit gider ekle
-              </button>
-            </div>
+              <CustomExpenseList
+                items={inputs.customFixedExpenses}
+                listKey="customFixedExpenses"
+                onAdd={addExpenseItem}
+                onChange={updateExpenseItem}
+                onRemove={removeExpenseItem}
+                addLabel="Sabit gider ekle"
+              />
+            </FormSection>
 
-            <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800">
-                Aylık Değişken Giderler
-              </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormSection title="Aylık Değişken Giderler">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                 <NumberField
-                  label="Yakıt / Elektrik"
+                  label="Yakıt / elektrik"
                   value={inputs.fuelOrElectricityMonthly}
-                  onChange={(value) => update("fuelOrElectricityMonthly", value)}
+                  onChange={(value) =>
+                    update("fuelOrElectricityMonthly", value)
+                  }
                 />
                 <NumberField
-                  label="Bakım ve Lastik"
+                  label="Bakım ve lastik"
                   value={inputs.maintenanceMonthly}
                   onChange={(value) => update("maintenanceMonthly", value)}
                 />
               </div>
-              <div className="mt-4 space-y-3">
-                {inputs.customVariableExpenses.map((item) => (
-                  <ExpenseEditor
-                    key={item.id}
-                    item={item}
-                    onChange={(changes) =>
-                      updateExpenseItem("customVariableExpenses", item.id, changes)
-                    }
-                    onRemove={() =>
-                      removeExpenseItem("customVariableExpenses", item.id)
-                    }
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => addExpenseItem("customVariableExpenses")}
-                className="small-action-button mt-4"
-              >
-                Değişken gider ekle
-              </button>
-            </div>
+              <CustomExpenseList
+                items={inputs.customVariableExpenses}
+                listKey="customVariableExpenses"
+                onAdd={addExpenseItem}
+                onChange={updateExpenseItem}
+                onRemove={removeExpenseItem}
+                addLabel="Değişken gider ekle"
+              />
+            </FormSection>
           </div>
         </section>
 
-        <section className="glass-card soft-appear p-5 sm:p-7 lg:sticky lg:top-24">
-          <div className="mb-5">
+        <section className="glass-card p-4 sm:p-5 xl:sticky xl:top-20">
+          <div className="mb-4">
             <span className="section-badge">2. Adım</span>
-            <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
               Sonuçlar
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Değerleri değiştirdikçe hesaplama anında yenilenir.
-            </p>
           </div>
 
           <ResultCard
@@ -279,7 +278,7 @@ export default function Calculator() {
             tone={result.monthlyNetProfit < 0 ? "negative" : "primary"}
           />
 
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <ResultCard
               label="Aylık Brüt Ciro"
               value={formatTRY(result.monthlyGrossRevenue)}
@@ -289,13 +288,21 @@ export default function Calculator() {
               value={formatTRY(result.monthlyTotalExpenses)}
             />
             <ResultCard
-              label="Geri Ödeme Süresi"
+              label="İlk Yatırım"
+              value={formatTRY(result.totalStartupCost)}
+            />
+            <ResultCard
+              label="Başabaş Ayı"
               value={
                 result.paybackMonths !== null
-                  ? `${result.paybackMonths} ay`
-                  : "Kâr etmiyor"
+                  ? `${result.paybackMonths}. ay`
+                  : "Kâra geçmiyor"
               }
               tone="accent"
+            />
+            <ResultCard
+              label="Grafik Sonu Kasası"
+              value={formatTRY(result.cumulativeCashAtHorizon)}
             />
             <ResultCard
               label="Başabaş Günlük Paket"
@@ -307,14 +314,25 @@ export default function Calculator() {
             />
           </div>
 
-          <div className="mt-4">
-            <ResultCard
-              label="Toplam Başlangıç Maliyeti"
-              value={formatTRY(result.totalStartupCost)}
+          <div className="mt-4 space-y-3">
+            <ExpenseTable
+              title="Gelirler"
+              items={[
+                { id: "packages", label: "Günlük paket", amount: inputs.dailyPackages },
+                {
+                  id: "price",
+                  label: "Ortalama paket ücreti",
+                  amount: inputs.averagePackagePrice,
+                },
+                {
+                  id: "days",
+                  label: "Aylık çalışma günü",
+                  amount: inputs.workingDaysPerMonth,
+                },
+              ]}
+              total={result.monthlyGrossRevenue}
+              totalLabel="Aylık brüt ciro"
             />
-          </div>
-
-          <div className="mt-6 space-y-5">
             <ExpenseTable
               title="Sabit Giderler"
               items={result.fixedExpenseItems}
@@ -327,44 +345,58 @@ export default function Calculator() {
             />
           </div>
 
-          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-800">
-              Önemli Notlar
-            </p>
-            <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600">
+          <div className="info-panel mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide">Önemli Notlar</p>
+            <ul className="text-muted mt-2 space-y-1.5 text-xs leading-relaxed">
               {result.assumptions.map((item) => (
-                <li className="flex gap-2" key={item}>
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
-                  <span>{item}</span>
-                </li>
+                <li key={item}>{item}</li>
               ))}
             </ul>
           </div>
         </section>
       </div>
 
-      <section className="glass-card soft-appear mt-6 p-5 sm:p-7">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <section className="glass-card mt-5 p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <span className="section-badge">3. Adım</span>
-            <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-              Aylık Nakit Akışı Grafiği
+            <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
+              Kümülatif Kasası
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Dikey eksende tutar, yatay eksende ay gösterilir.
+            <p className="text-muted mt-1 text-sm">
+              İlk yatırımın etkisinden başlayarak aylık net kâr birikimi gösterilir.
             </p>
           </div>
-          <div className="w-32">
-            <NumberField
-              label="Ay sayısı"
-              value={inputs.projectionMonths}
-              onChange={(value) => update("projectionMonths", value)}
-            />
+          <div className="grid grid-cols-2 gap-2 text-xs font-bold sm:grid-cols-4">
+            <ChartStat label="İlk yatırım" value={formatTRY(result.totalStartupCost)} />
+            <ChartStat label="Aylık ciro" value={formatTRY(result.monthlyGrossRevenue)} />
+            <ChartStat label="Aylık gider" value={formatTRY(result.monthlyTotalExpenses)} />
+            <ChartStat label="Aylık net kâr" value={formatTRY(result.monthlyNetProfit)} />
           </div>
         </div>
-        <ProjectionChart projection={result.projection} />
+        <ProjectionChart
+          projection={result.projection}
+          breakEvenMonth={result.paybackMonths}
+        />
       </section>
     </>
+  );
+}
+
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="text-muted mb-2 text-xs font-bold uppercase tracking-wide">
+        {title}
+      </h3>
+      {children}
+    </section>
   );
 }
 
@@ -379,9 +411,7 @@ function NumberField({
 }) {
   return (
     <label className="field-shell block">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-500">
-        {label}
-      </span>
+      <span className="field-label">{label}</span>
       <input
         type="number"
         inputMode="decimal"
@@ -391,6 +421,46 @@ function NumberField({
         onChange={(event) => onChange(Number(event.target.value) || 0)}
       />
     </label>
+  );
+}
+
+function CustomExpenseList({
+  items,
+  listKey,
+  onAdd,
+  onChange,
+  onRemove,
+  addLabel,
+}: {
+  items: ExpenseItem[];
+  listKey: ExpenseListKey;
+  onAdd: (listKey: ExpenseListKey) => void;
+  onChange: (
+    listKey: ExpenseListKey,
+    id: string,
+    changes: Partial<Pick<ExpenseItem, "label" | "amount">>
+  ) => void;
+  onRemove: (listKey: ExpenseListKey, id: string) => void;
+  addLabel: string;
+}) {
+  return (
+    <div className="mt-3 space-y-2">
+      {items.map((item) => (
+        <ExpenseEditor
+          key={item.id}
+          item={item}
+          onChange={(changes) => onChange(listKey, item.id, changes)}
+          onRemove={() => onRemove(listKey, item.id)}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={() => onAdd(listKey)}
+        className="small-action-button"
+      >
+        {addLabel}
+      </button>
+    </div>
   );
 }
 
@@ -404,11 +474,9 @@ function ExpenseEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_130px_44px] items-end gap-2">
+    <div className="grid grid-cols-[1fr_120px_40px] items-end gap-2">
       <label className="field-shell block">
-        <span className="mb-1.5 block text-xs font-semibold text-slate-500">
-          Kalem
-        </span>
+        <span className="field-label">Kalem</span>
         <input
           type="text"
           className="field-input"
@@ -418,9 +486,7 @@ function ExpenseEditor({
         />
       </label>
       <label className="field-shell block">
-        <span className="mb-1.5 block text-xs font-semibold text-slate-500">
-          Tutar (₺)
-        </span>
+        <span className="field-label">Tutar (₺)</span>
         <input
           type="number"
           inputMode="decimal"
@@ -435,7 +501,7 @@ function ExpenseEditor({
       <button
         type="button"
         onClick={onRemove}
-        className="h-[46px] rounded-xl border border-red-200 bg-red-50 text-sm font-bold text-red-600 transition hover:bg-red-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+        className="danger-button"
         aria-label="Kalemi sil"
       >
         Sil
@@ -448,45 +514,29 @@ function ExpenseTable({
   title,
   items,
   total,
+  totalLabel = "Toplam",
 }: {
   title: string;
   items: ExpenseItem[];
   total: number;
+  totalLabel?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80">
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-600">
-          {title}
-        </p>
-      </div>
+    <div className="summary-table">
+      <div className="summary-table-header">{title}</div>
       <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-xs text-slate-500">
-            <th className="px-4 py-2 font-semibold">Kalem</th>
-            <th className="px-4 py-2 text-right font-semibold">Tutar</th>
-          </tr>
-        </thead>
         <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="border-b border-slate-100 last:border-0">
-              <td className="px-4 py-2.5 font-medium text-slate-700">
-                {item.label || "İsimsiz gider"}
-              </td>
-              <td className="px-4 py-2.5 text-right font-bold text-slate-900">
-                {formatTRY(item.amount)}
-              </td>
+            <tr key={item.id}>
+              <td>{item.label || "İsimsiz kalem"}</td>
+              <td className="text-right font-bold">{formatNumber(item.amount)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-blue-50/70">
-            <td className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-blue-800">
-              Toplam
-            </td>
-            <td className="px-4 py-3 text-right text-sm font-black text-blue-900">
-              {formatTRY(total)}
-            </td>
+          <tr>
+            <td>{totalLabel}</td>
+            <td className="text-right">{formatTRY(total)}</td>
           </tr>
         </tfoot>
       </table>
@@ -494,123 +544,130 @@ function ExpenseTable({
   );
 }
 
-function ProjectionChart({ projection }: { projection: ProjectionPoint[] }) {
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 1 }).format(
+    value
+  );
+}
+
+function ChartStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="chart-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ProjectionChart({
+  projection,
+  breakEvenMonth,
+}: {
+  projection: ProjectionPoint[];
+  breakEvenMonth: number | null;
+}) {
   const width = 820;
-  const height = 340;
-  const padding = { top: 24, right: 24, bottom: 42, left: 104 };
+  const height = 320;
+  const padding = { top: 24, right: 24, bottom: 40, left: 108 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const values = projection.flatMap((point) => [
-    point.revenue,
-    point.expenses,
-    point.netProfit,
-  ]);
+  const values = projection.map((point) => point.cumulativeCash);
   const maxValue = Math.max(...values, 0);
   const minValue = Math.min(...values, 0);
   const valueRange = maxValue - minValue || 1;
-  const maxMonth = projection.length;
+  const maxMonth = projection[projection.length - 1].month;
 
-  const x = (month: number) =>
-    padding.left + ((month - 1) / Math.max(maxMonth - 1, 1)) * chartWidth;
+  const x = (month: number) => padding.left + (month / maxMonth) * chartWidth;
   const y = (value: number) =>
     padding.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
 
-  const lines = [
-    { key: "revenue", label: "Brüt ciro", color: "#2563eb" },
-    { key: "expenses", label: "Toplam gider", color: "#f97316" },
-    { key: "netProfit", label: "Net kâr", color: "#16a34a" },
-  ] as const;
   const gridValues = [0, 0.25, 0.5, 0.75, 1].map(
     (ratio) => minValue + ratio * valueRange
   );
   const tickMonths = Array.from(
     new Set(
-      Array.from({ length: 7 }, (_, index) =>
-        Math.min(maxMonth, Math.max(1, Math.round((index * maxMonth) / 6) + 1))
-      )
+      Array.from({ length: 7 }, (_, index) => Math.round((index * maxMonth) / 6))
     )
   );
+  const points = projection
+    .map((point) => `${x(point.month)},${y(point.cumulativeCash)}`)
+    .join(" ");
+  const breakEvenX = breakEvenMonth !== null ? x(breakEvenMonth) : null;
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap gap-4 text-xs font-semibold text-slate-600">
-        {lines.map((line) => (
-          <span className="inline-flex items-center gap-2" key={line.key}>
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: line.color }}
-            />
-            {line.label}
-          </span>
-        ))}
-      </div>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-auto w-full"
-        role="img"
-        aria-label="Aylık ciro, gider ve net kâr grafiği"
-      >
-        {gridValues.map((value) => (
-          <g key={value}>
-            <line
-              x1={padding.left}
-              x2={width - padding.right}
-              y1={y(value)}
-              y2={y(value)}
-              stroke="#e2e8f0"
-              strokeWidth="1"
-            />
-            <text
-              x={padding.left - 12}
-              y={y(value) + 4}
-              textAnchor="end"
-              className="fill-slate-500 text-[11px] font-semibold"
-            >
-              {formatTRY(value)}
-            </text>
-          </g>
-        ))}
-        {tickMonths.map((month) => (
-          <text
-            key={month}
-            x={x(month)}
-            y={height - 14}
-            textAnchor="middle"
-            className="fill-slate-500 text-[11px] font-semibold"
-          >
-            {month}. ay
-          </text>
-        ))}
-        {lines.map((line) => (
-          <polyline
-            key={line.key}
-            fill="none"
-            stroke={line.color}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points={projection
-              .map((point) => `${x(point.month)},${y(point[line.key])}`)
-              .join(" ")}
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="chart-canvas h-auto w-full"
+      role="img"
+      aria-label="Kümülatif kasası grafiği"
+    >
+      {gridValues.map((value) => (
+        <g key={value}>
+          <line
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={y(value)}
+            y2={y(value)}
+            className="chart-grid"
           />
-        ))}
-        {projection.map((point) => (
-          <circle
-            key={point.month}
-            cx={x(point.month)}
-            cy={y(point.netProfit)}
-            r="3"
-            fill="#16a34a"
+          <text
+            x={padding.left - 12}
+            y={y(value) + 4}
+            textAnchor="end"
+            className="chart-label"
           >
-            <title>
-              {`${point.month}. ay • Ciro ${formatTRY(point.revenue)} • Gider ${formatTRY(
-                point.expenses
-              )} • Net kâr ${formatTRY(point.netProfit)}`}
-            </title>
-          </circle>
-        ))}
-      </svg>
-    </div>
+            {formatTRY(value)}
+          </text>
+        </g>
+      ))}
+      {tickMonths.map((month) => (
+        <text
+          key={month}
+          x={x(month)}
+          y={height - 14}
+          textAnchor="middle"
+          className="chart-label"
+        >
+          {month}. ay
+        </text>
+      ))}
+      <polyline
+        points={points}
+        fill="none"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="chart-line"
+      />
+      {projection.map((point) => (
+        <circle
+          key={point.month}
+          cx={x(point.month)}
+          cy={y(point.cumulativeCash)}
+          r="3"
+          className="chart-point"
+        >
+          <title>
+            {`${point.month}. ay • Kasada ${formatTRY(
+              point.cumulativeCash
+            )} • Net kâr ${formatTRY(point.monthlyNetProfit)}`}
+          </title>
+        </circle>
+      ))}
+      {breakEvenX !== null && breakEvenMonth !== null ? (
+        <g>
+          <circle cx={breakEvenX} cy={y(0)} r="6" className="chart-break-even" />
+          <text
+            x={Math.min(breakEvenX + 10, width - padding.right)}
+            y={y(0) - 12}
+            textAnchor={breakEvenX > width * 0.75 ? "end" : "start"}
+            className="chart-break-even-label"
+          >
+            Başabaş: {breakEvenMonth}. ay
+          </text>
+        </g>
+      ) : null}
+    </svg>
   );
 }
 
@@ -631,26 +688,24 @@ function ResultCard({
           : tone === "accent"
             ? "accent-result"
             : tone === "negative"
-              ? "border-red-200 bg-red-50"
+              ? "negative-result"
               : ""
       }`}
     >
       <p
         className={`text-xs font-semibold ${
-          tone === "primary" ? "text-blue-50" : "text-slate-500"
+          tone === "primary" ? "text-white/80" : "text-muted"
         }`}
       >
         {label}
       </p>
       <p
-        className={`mt-1 text-xl font-black tracking-tight sm:text-2xl ${
+        className={`mt-1 text-lg font-black tracking-tight sm:text-xl ${
           tone === "primary"
             ? "text-white"
             : tone === "negative"
-              ? "text-red-700"
-              : tone === "accent"
-                ? "text-orange-700"
-                : "text-slate-950"
+              ? "text-red-600 dark:text-red-300"
+              : "text-strong"
         }`}
       >
         {value}

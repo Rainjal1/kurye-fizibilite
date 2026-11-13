@@ -33,6 +33,7 @@ export interface CalculationResult {
   totalStartupCost: number;
   equipmentCost: number;
   paybackMonths: number | null;
+  cumulativeCashAtHorizon: number;
   breakEvenPackagesPerDay: number | null;
   fixedExpenseItems: ExpenseItem[];
   variableExpenseItems: ExpenseItem[];
@@ -42,7 +43,8 @@ export interface CalculationResult {
 
 export interface ProjectionPoint {
   month: number;
-  revenue: number;
-  expenses: number;
-  netProfit: number;
+  cumulativeCash: number;
+  monthlyRevenue: number;
+  monthlyExpenses: number;
+  monthlyNetProfit: number;
 }

@@ -71,20 +71,34 @@ export function calculateFeasibility(
     Math.max(1, Math.round(projectionMonths || 1))
   );
 
-  const projection: ProjectionPoint[] = Array.from(
-    { length: safeProjectionMonths },
-    (_, index) => ({
-      month: index + 1,
-      revenue: monthlyGrossRevenue,
-      expenses: monthlyTotalExpenses,
-      netProfit: monthlyNetProfit,
-    })
-  );
+  const projection: ProjectionPoint[] = [
+    {
+      month: 0,
+      cumulativeCash: -totalStartupCost,
+      monthlyRevenue: 0,
+      monthlyExpenses: 0,
+      monthlyNetProfit: 0,
+    },
+    ...Array.from({ length: safeProjectionMonths }, (_, index) => {
+      const month = index + 1;
+      const cumulativeCash =
+        -totalStartupCost + month * monthlyNetProfit;
+
+      return {
+        month,
+        cumulativeCash,
+        monthlyRevenue: monthlyGrossRevenue,
+        monthlyExpenses: monthlyTotalExpenses,
+        monthlyNetProfit,
+      };
+    }),
+  ];
 
   let paybackMonths: number | null = null;
-  if (monthlyNetProfit > 0) {
-    paybackMonths = Math.ceil(totalStartupCost / monthlyNetProfit);
-  }
+  const cumulativeCashAtHorizon = projection[projection.length - 1].cumulativeCash;
+  paybackMonths =
+    projection.find((point) => point.month > 0 && point.cumulativeCash >= 0)
+      ?.month ?? null;
 
   let breakEvenPackagesPerDay: number | null = null;
   if (averagePackagePrice > 0 && workingDaysPerMonth > 0) {
@@ -112,6 +126,7 @@ export function calculateFeasibility(
     totalStartupCost,
     equipmentCost,
     paybackMonths,
+    cumulativeCashAtHorizon,
     breakEvenPackagesPerDay,
     fixedExpenseItems,
     variableExpenseItems,
