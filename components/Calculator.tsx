@@ -11,6 +11,7 @@ import { calculateFeasibility, formatTRY } from "@/lib/calculations";
 
 type ExpenseListKey =
   | "equipmentItems"
+  | "personalExpenseItems"
   | "customFixedExpenses"
   | "customVariableExpenses";
 
@@ -19,6 +20,7 @@ type Theme = "light" | "dark";
 export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
   const [theme, setTheme] = useState<Theme>("light");
+  const [personalExpensesOpen, setPersonalExpensesOpen] = useState(false);
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
@@ -40,6 +42,16 @@ export default function Calculator() {
       window.localStorage.setItem("theme", nextTheme);
       return nextTheme;
     });
+  }
+
+  function resetInputs() {
+    setInputs(DEFAULT_INPUTS);
+    setPersonalExpensesOpen(false);
+  }
+
+  function togglePersonalExpenses(enabled: boolean) {
+    update("personalExpensesEnabled", enabled);
+    setPersonalExpensesOpen(enabled);
   }
 
   function update<K extends keyof CalculatorInputs>(
@@ -66,6 +78,8 @@ export default function Calculator() {
     const prefix =
       listKey === "customFixedExpenses"
         ? "sabit"
+        : listKey === "personalExpenseItems"
+          ? "kisisel"
         : listKey === "customVariableExpenses"
           ? "degisken"
           : "ekipman";
@@ -90,26 +104,30 @@ export default function Calculator() {
 
   return (
     <>
+      <div className="header-actions">
+        <details className="header-menu">
+          <summary aria-label="Ayarlar ve tema men\u00fcs\u00fc">
+            <span />
+            <span />
+            <span />
+          </summary>
+          <div className="header-menu-panel">
+            <button type="button" onClick={toggleTheme}>
+              {theme === "dark" ? "Ayd\u0131nl\u0131k mod" : "Karanl\u0131k mod"}
+            </button>
+            <button type="button" onClick={resetInputs}>
+              Varsay\u0131lana d\u00f6n
+            </button>
+          </div>
+        </details>
+      </div>
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr] xl:items-start">
         <section className="glass-card p-4 sm:p-5">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <span className="section-badge">1. Adım</span>
               <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
                 Hesaplama Bilgileri
               </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={toggleTheme} className="small-action-button">
-                {theme === "dark" ? "Aydınlık mod" : "Karanlık mod"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setInputs(DEFAULT_INPUTS)}
-                className="small-action-button"
-              >
-                Varsayılana dön
-              </button>
             </div>
           </div>
 
@@ -150,7 +168,7 @@ export default function Calculator() {
                 </summary>
                 <div className="space-y-1.5">
                   {inputs.equipmentItems.map((item) => (
-                    <ExpenseEditor
+                    <EquipmentEditor
                       key={item.id}
                       item={item}
                       onChange={(changes) =>
@@ -235,6 +253,16 @@ export default function Calculator() {
                 onRemove={removeExpenseItem}
                 addLabel="Sabit gider ekle"
               />
+              <PersonalExpenseSection
+                enabled={inputs.personalExpensesEnabled}
+                open={personalExpensesOpen}
+                items={inputs.personalExpenseItems}
+                onEnabledChange={togglePersonalExpenses}
+                onOpenChange={setPersonalExpensesOpen}
+                onAdd={addExpenseItem}
+                onChange={updateExpenseItem}
+                onRemove={removeExpenseItem}
+              />
             </FormSection>
 
             <FormSection title="Aylık Değişken Giderler">
@@ -266,7 +294,6 @@ export default function Calculator() {
 
         <section className="glass-card p-4 sm:p-5 xl:sticky xl:top-20">
           <div className="mb-4">
-            <span className="section-badge">2. Adım</span>
             <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
               Sonuçlar
             </h2>
@@ -359,7 +386,6 @@ export default function Calculator() {
       <section className="glass-card mt-5 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span className="section-badge">3. Adım</span>
             <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
               Kümülatif Kasası
             </h2>
@@ -475,29 +501,21 @@ function ExpenseEditor({
 }) {
   return (
     <div className="dynamic-expense-grid">
-      <label className="sheet-cell">
-        <span className="sheet-cell-label">Gider adı</span>
-        <input
-          type="text"
-          className="sheet-input sheet-input-text"
-          value={item.label}
-          placeholder="Örn. Yıllık bakım"
-          onChange={(event) => onChange({ label: event.target.value })}
-        />
-      </label>
-      <label className="sheet-cell">
-        <span className="sheet-cell-label">Tutar (₺)</span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          className="sheet-input"
-          value={item.amount}
-          onChange={(event) =>
-            onChange({ amount: Number(event.target.value) || 0 })
-          }
-        />
-      </label>
+      <input
+        type="text"
+        className="sheet-input sheet-input-text expense-name-input"
+        value={item.label}
+        placeholder="Gider adı"
+        onChange={(event) => onChange({ label: event.target.value })}
+      />
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        className="sheet-input"
+        value={item.amount}
+        onChange={(event) => onChange({ amount: Number(event.target.value) || 0 })}
+      />
       <button
         type="button"
         onClick={onRemove}
@@ -507,6 +525,102 @@ function ExpenseEditor({
         ×
       </button>
     </div>
+  );
+}
+
+function EquipmentEditor({
+  item,
+  onChange,
+  onRemove,
+}: {
+  item: ExpenseItem;
+  onChange: (changes: Partial<Pick<ExpenseItem, "amount">>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="dynamic-expense-grid">
+      <div className="static-expense-label">{item.label}</div>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        className="sheet-input"
+        value={item.amount}
+        onChange={(event) => onChange({ amount: Number(event.target.value) || 0 })}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="danger-button"
+        aria-label="Kalemi sil"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function PersonalExpenseSection({
+  enabled,
+  open,
+  items,
+  onEnabledChange,
+  onOpenChange,
+  onAdd,
+  onChange,
+  onRemove,
+}: {
+  enabled: boolean;
+  open: boolean;
+  items: ExpenseItem[];
+  onEnabledChange: (enabled: boolean) => void;
+  onOpenChange: (open: boolean) => void;
+  onAdd: (listKey: ExpenseListKey) => void;
+  onChange: (
+    listKey: ExpenseListKey,
+    id: string,
+    changes: Partial<Pick<ExpenseItem, "label" | "amount">>
+  ) => void;
+  onRemove: (listKey: ExpenseListKey, id: string) => void;
+}) {
+  const total = items.reduce((sum, item) => sum + item.amount, 0);
+
+  return (
+    <details
+      className="collapsible-panel personal-expense-panel"
+      open={open}
+      onToggle={(event) => onOpenChange(event.currentTarget.open)}
+    >
+      <summary>
+        <label className="personal-expense-toggle">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => onEnabledChange(event.target.checked)}
+          />
+          <span>Kişisel giderler</span>
+        </label>
+        <strong>{formatTRY(total)}</strong>
+      </summary>
+      <div className="space-y-1.5">
+        {items.map((item) => (
+          <ExpenseEditor
+            key={item.id}
+            item={item}
+            onChange={(changes) => onChange("personalExpenseItems", item.id, changes)}
+            onRemove={() => onRemove("personalExpenseItems", item.id)}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => onAdd("personalExpenseItems")}
+          className="small-action-button"
+        >
+          Kişisel gider ekle
+        </button>
+      </div>
+    </details>
   );
 }
 

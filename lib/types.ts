@@ -20,6 +20,8 @@ export interface CalculatorInputs {
   accountingMonthly: number;
   phoneInternetMonthly: number;
   otherMonthly: number;
+  personalExpensesEnabled: boolean;
+  personalExpenseItems: ExpenseItem[];
   customFixedExpenses: ExpenseItem[];
   customVariableExpenses: ExpenseItem[];
 }

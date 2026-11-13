@@ -1,4 +1,9 @@
-import { CalculatorInputs, CalculationResult, ExpenseItem, ProjectionPoint } from "./types";
+import type {
+  CalculatorInputs,
+  CalculationResult,
+  ExpenseItem,
+  ProjectionPoint,
+} from "./types.ts";
 
 export function calculateFeasibility(
   inputs: CalculatorInputs
@@ -19,6 +24,8 @@ export function calculateFeasibility(
     accountingMonthly,
     phoneInternetMonthly,
     otherMonthly,
+    personalExpensesEnabled,
+    personalExpenseItems,
     customFixedExpenses,
     customVariableExpenses,
   } = inputs;
@@ -37,6 +44,7 @@ export function calculateFeasibility(
     { id: "accounting", label: "Muhasebe", amount: accountingMonthly },
     { id: "phone-internet", label: "Telefon / internet", amount: phoneInternetMonthly },
     { id: "other", label: "Diğer sabit gider", amount: otherMonthly },
+    ...(personalExpensesEnabled ? personalExpenseItems : []),
     ...customFixedExpenses,
   ];
 

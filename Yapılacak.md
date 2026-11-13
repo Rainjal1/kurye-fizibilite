@@ -1,6 +1,6 @@
-# Yapılacak Görevler
+# Yapılacak
 
-Yeni görevleri bu dosyaya yaz. Tamamlanan görevler `Görevler.md` dosyasındaki tabloya tarih ve saat bilgisiyle aktarılır.
+Yeni görevleri bu dosyaya yaz. Tamamlanan görevler `Görevler.md` dosyasındaki tabloya eklenir.
 
 ## Bekleyen Görevler
 

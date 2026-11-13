@@ -82,44 +82,27 @@ body {
 
   .sheet-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+    --field-width: 112px;
+    --field-divider-width: 1px;
     overflow: hidden;
     border: 1px solid var(--surface-border);
     border-radius: 0.6rem;
     background: var(--surface-strong);
   }
 
-  @media (min-width: 1024px) {
-    .sheet-grid {
-      grid-template-columns:
-        minmax(130px, 1.1fr) minmax(112px, 0.9fr)
-        minmax(130px, 1.1fr) minmax(112px, 0.9fr);
-    }
-  }
-
   .sheet-cell {
     display: grid;
     min-height: 2.25rem;
-    grid-template-columns: minmax(0, 1fr) minmax(92px, 108px);
+    grid-template-columns: minmax(0, 1fr) var(--field-width);
     align-items: center;
     border-bottom: 1px solid var(--surface-border);
     background: var(--surface-strong);
     transition: background-color 120ms ease;
   }
 
-  .sheet-cell:nth-last-child(-n + 2) {
+  .sheet-cell:last-child {
     border-bottom: 0;
-  }
-
-  .sheet-grid > .sheet-cell:first-child {
-    border-right: 1px solid var(--surface-border);
-  }
-
-  @media (min-width: 1024px) {
-    .sheet-grid > .sheet-cell:nth-child(4n + 1),
-    .sheet-grid > .sheet-cell:nth-child(4n + 2) {
-      border-right: 1px solid var(--surface-border);
-    }
   }
 
   .sheet-cell:hover {
@@ -132,12 +115,17 @@ body {
   }
 
   .sheet-cell-label {
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-height: 2.25rem;
     padding-left: 0.65rem;
     padding-right: 0.5rem;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
     text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.05rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted-foreground);
@@ -147,7 +135,7 @@ body {
     width: 100%;
     min-height: 2.25rem;
     border: 0;
-    border-left: 1px solid var(--surface-border);
+    border-left: var(--field-divider-width) solid var(--surface-border);
     background: transparent;
     padding: 0 0.65rem;
     text-align: right;
@@ -179,7 +167,8 @@ body {
 
   .dynamic-expense-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 116px 36px;
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) var(--field-width);
     align-items: center;
     overflow: hidden;
     border: 1px solid var(--surface-border);
@@ -187,22 +176,21 @@ body {
     background: var(--surface-strong);
   }
 
-  .dynamic-expense-grid > .sheet-cell {
-    border-bottom: 0;
+  .static-expense-label {
+    display: flex;
+    align-items: center;
+    min-height: 2.35rem;
+    padding: 0.35rem 0.65rem;
+    border-right: var(--field-divider-width) solid var(--surface-border);
+    line-height: 1.05rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
   }
 
-  .dynamic-expense-grid > .sheet-cell:nth-child(2) {
-    grid-template-columns: minmax(0, 1fr);
-    border-left: 1px solid var(--surface-border);
-    border-right: 1px solid var(--surface-border);
-  }
-
-  .dynamic-expense-grid > .sheet-cell:nth-child(2) .sheet-cell-label {
-    display: none;
-  }
-
-  .dynamic-expense-grid > .sheet-cell:nth-child(2) .sheet-input {
-    border-left: 0;
+  .expense-name-input {
+    padding-right: 2.5rem;
   }
 
   .result-card {
@@ -242,6 +230,83 @@ body {
     color: var(--brand-blue);
   }
 
+  .header-actions {
+    position: fixed;
+    top: 0.7rem;
+    right: 0.75rem;
+    z-index: 40;
+  }
+
+  .header-menu {
+    position: relative;
+  }
+
+  .header-menu summary {
+    display: grid;
+    gap: 0.22rem;
+    place-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+    cursor: pointer;
+    box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.65);
+  }
+
+  .header-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .header-menu summary span {
+    display: block;
+    width: 1.1rem;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--brand-blue);
+  }
+
+  .header-menu[open] summary {
+    border-color: rgba(37, 99, 235, 0.35);
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  .header-menu-panel {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    display: grid;
+    min-width: 11rem;
+    padding: 0.35rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 0.8rem;
+    background: var(--surface-strong);
+    box-shadow: 0 18px 42px -28px rgba(15, 23, 42, 0.75);
+  }
+
+  .header-menu-panel button {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 0.55rem;
+    background: transparent;
+    padding: 0.55rem 0.65rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  .header-menu-panel button:hover {
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  @media (min-width: 640px) {
+    .app-shell > header > div > span.hidden {
+      margin-right: 3.25rem;
+    }
+  }
+
   .small-action-button {
     display: inline-flex;
     align-items: center;
@@ -266,7 +331,13 @@ body {
   }
 
   .danger-button {
-    height: 2.15rem;
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    transform: translateY(-50%);
     border-radius: 0.7rem;
     border: 1px solid rgba(239, 68, 68, 0.24);
     background: rgba(239, 68, 68, 0.08);
@@ -318,6 +389,25 @@ body {
 
   .collapsible-panel > div {
     padding: 0.7rem;
+  }
+
+  .personal-expense-panel {
+    margin-top: 0.75rem;
+  }
+
+  .personal-expense-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--strong-foreground);
+  }
+
+  .personal-expense-toggle input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--brand-blue);
   }
 
   .summary-table {
