@@ -17,10 +17,17 @@ type ExpenseListKey =
 
 type Theme = "light" | "dark";
 
+type NumberFieldKey = {
+  [K in keyof CalculatorInputs]: CalculatorInputs[K] extends number ? K : never;
+}[keyof CalculatorInputs];
+
 export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
   const [theme, setTheme] = useState<Theme>("light");
   const [personalExpensesOpen, setPersonalExpensesOpen] = useState(false);
+  const [removedFields, setRemovedFields] = useState<
+    ReadonlySet<NumberFieldKey>
+  >(new Set());
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
@@ -47,6 +54,7 @@ export default function Calculator() {
   function resetInputs() {
     setInputs(DEFAULT_INPUTS);
     setPersonalExpensesOpen(false);
+    setRemovedFields(new Set());
   }
 
   function togglePersonalExpenses(enabled: boolean) {
@@ -102,11 +110,16 @@ export default function Calculator() {
     }));
   }
 
+  function removeNumberField(key: NumberFieldKey) {
+    update(key, 0);
+    setRemovedFields((previous) => new Set(previous).add(key));
+  }
+
   return (
     <>
       <div className="header-actions">
         <details className="header-menu">
-          <summary aria-label="Ayarlar ve tema men\u00fcs\u00fc">
+          <summary aria-label="Ayarlar ve tema menüsü">
             <span />
             <span />
             <span />
@@ -116,7 +129,7 @@ export default function Calculator() {
               {theme === "dark" ? "Ayd\u0131nl\u0131k mod" : "Karanl\u0131k mod"}
             </button>
             <button type="button" onClick={resetInputs}>
-              Varsay\u0131lana d\u00f6n
+              Varsayılana dön
             </button>
           </div>
         </details>
@@ -138,21 +151,29 @@ export default function Calculator() {
                   label="Günlük paket"
                   value={inputs.dailyPackages}
                   onChange={(value) => update("dailyPackages", value)}
+                  isRemoved={removedFields.has("dailyPackages")}
+                  onRemove={() => removeNumberField("dailyPackages")}
                 />
                 <NumberCell
                   label="Paket ücreti (₺)"
                   value={inputs.averagePackagePrice}
                   onChange={(value) => update("averagePackagePrice", value)}
+                  isRemoved={removedFields.has("averagePackagePrice")}
+                  onRemove={() => removeNumberField("averagePackagePrice")}
                 />
                 <NumberCell
                   label="Aylık gün"
                   value={inputs.workingDaysPerMonth}
                   onChange={(value) => update("workingDaysPerMonth", value)}
+                  isRemoved={removedFields.has("workingDaysPerMonth")}
+                  onRemove={() => removeNumberField("workingDaysPerMonth")}
                 />
                 <NumberCell
                   label="Grafik ufku (ay)"
                   value={inputs.projectionMonths}
                   onChange={(value) => update("projectionMonths", value)}
+                  isRemoved={removedFields.has("projectionMonths")}
+                  onRemove={() => removeNumberField("projectionMonths")}
                 />
               </div>
               <p className="text-muted mt-2 text-xs font-semibold">
@@ -200,16 +221,22 @@ export default function Calculator() {
                   label="Araç (₺)"
                   value={inputs.vehicleCost}
                   onChange={(value) => update("vehicleCost", value)}
+                  isRemoved={removedFields.has("vehicleCost")}
+                  onRemove={() => removeNumberField("vehicleCost")}
                 />
                 <NumberCell
                   label="Belgeler (₺)"
                   value={inputs.licenseAndDocsCost}
                   onChange={(value) => update("licenseAndDocsCost", value)}
+                  isRemoved={removedFields.has("licenseAndDocsCost")}
+                  onRemove={() => removeNumberField("licenseAndDocsCost")}
                 />
                 <NumberCell
                   label="Şirket kuruluşu (₺)"
                   value={inputs.companySetupCost}
                   onChange={(value) => update("companySetupCost", value)}
+                  isRemoved={removedFields.has("companySetupCost")}
+                  onRemove={() => removeNumberField("companySetupCost")}
                 />
               </div>
               <p className="text-muted mt-2 text-xs font-semibold">
@@ -223,26 +250,36 @@ export default function Calculator() {
                   label="Sigorta"
                   value={inputs.insuranceMonthly}
                   onChange={(value) => update("insuranceMonthly", value)}
+                  isRemoved={removedFields.has("insuranceMonthly")}
+                  onRemove={() => removeNumberField("insuranceMonthly")}
                 />
                 <NumberCell
                   label="Bağ-Kur"
                   value={inputs.bagkurMonthly}
                   onChange={(value) => update("bagkurMonthly", value)}
+                  isRemoved={removedFields.has("bagkurMonthly")}
+                  onRemove={() => removeNumberField("bagkurMonthly")}
                 />
                 <NumberCell
                   label="Muhasebe"
                   value={inputs.accountingMonthly}
                   onChange={(value) => update("accountingMonthly", value)}
+                  isRemoved={removedFields.has("accountingMonthly")}
+                  onRemove={() => removeNumberField("accountingMonthly")}
                 />
                 <NumberCell
                   label="Telefon / internet"
                   value={inputs.phoneInternetMonthly}
                   onChange={(value) => update("phoneInternetMonthly", value)}
+                  isRemoved={removedFields.has("phoneInternetMonthly")}
+                  onRemove={() => removeNumberField("phoneInternetMonthly")}
                 />
                 <NumberCell
                   label="Diğer"
                   value={inputs.otherMonthly}
                   onChange={(value) => update("otherMonthly", value)}
+                  isRemoved={removedFields.has("otherMonthly")}
+                  onRemove={() => removeNumberField("otherMonthly")}
                 />
               </div>
               <CustomExpenseList
@@ -273,11 +310,17 @@ export default function Calculator() {
                   onChange={(value) =>
                     update("fuelOrElectricityMonthly", value)
                   }
+                  isRemoved={removedFields.has("fuelOrElectricityMonthly")}
+                  onRemove={() =>
+                    removeNumberField("fuelOrElectricityMonthly")
+                  }
                 />
                 <NumberCell
                   label="Bakım ve lastik"
                   value={inputs.maintenanceMonthly}
                   onChange={(value) => update("maintenanceMonthly", value)}
+                  isRemoved={removedFields.has("maintenanceMonthly")}
+                  onRemove={() => removeNumberField("maintenanceMonthly")}
                 />
               </div>
               <CustomExpenseList
@@ -430,23 +473,40 @@ function NumberCell({
   label,
   value,
   onChange,
+  isRemoved,
+  onRemove,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  isRemoved: boolean;
+  onRemove: () => void;
 }) {
+  if (isRemoved) {
+    return null;
+  }
+
   return (
-    <label className="sheet-cell">
+    <div className="sheet-cell">
       <span className="sheet-cell-label">{label}</span>
       <input
         type="number"
         inputMode="decimal"
         min={0}
+        aria-label={label}
         className="sheet-input"
         value={value}
         onChange={(event) => onChange(Number(event.target.value) || 0)}
       />
-    </label>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="danger-button sheet-remove-button"
+        aria-label={`${label} satırını sil`}
+      >
+        ×
+      </button>
+    </div>
   );
 }
 
