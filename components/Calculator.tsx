@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   CalculatorInputs,
   ExpenseItem,
@@ -8,6 +9,10 @@ import {
 } from "@/lib/types";
 import { DEFAULT_INPUTS } from "@/lib/constants";
 import { calculateFeasibility, formatTRY } from "@/lib/calculations";
+import {
+  calculateExpenseLabelRatio,
+  EXPENSE_ROW_LAYOUT,
+} from "@/lib/layout";
 
 type ExpenseListKey =
   | "equipmentItems"
@@ -28,6 +33,9 @@ export default function Calculator() {
   const [removedFields, setRemovedFields] = useState<
     ReadonlySet<NumberFieldKey>
   >(new Set());
+  const [expenseLabelRatio, setExpenseLabelRatio] = useState<number>(
+    EXPENSE_ROW_LAYOUT.defaultLabelRatio
+  );
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
@@ -192,6 +200,8 @@ export default function Calculator() {
                     <EquipmentEditor
                       key={item.id}
                       item={item}
+                      labelRatio={expenseLabelRatio}
+                      onLabelRatioChange={setExpenseLabelRatio}
                       onChange={(changes) =>
                         updateExpenseItem("equipmentItems", item.id, changes)
                       }
@@ -285,6 +295,8 @@ export default function Calculator() {
               <CustomExpenseList
                 items={inputs.customFixedExpenses}
                 listKey="customFixedExpenses"
+                labelRatio={expenseLabelRatio}
+                onLabelRatioChange={setExpenseLabelRatio}
                 onAdd={addExpenseItem}
                 onChange={updateExpenseItem}
                 onRemove={removeExpenseItem}
@@ -294,6 +306,8 @@ export default function Calculator() {
                 enabled={inputs.personalExpensesEnabled}
                 open={personalExpensesOpen}
                 items={inputs.personalExpenseItems}
+                labelRatio={expenseLabelRatio}
+                onLabelRatioChange={setExpenseLabelRatio}
                 onEnabledChange={togglePersonalExpenses}
                 onOpenChange={setPersonalExpensesOpen}
                 onAdd={addExpenseItem}
@@ -326,6 +340,8 @@ export default function Calculator() {
               <CustomExpenseList
                 items={inputs.customVariableExpenses}
                 listKey="customVariableExpenses"
+                labelRatio={expenseLabelRatio}
+                onLabelRatioChange={setExpenseLabelRatio}
                 onAdd={addExpenseItem}
                 onChange={updateExpenseItem}
                 onRemove={removeExpenseItem}
@@ -513,6 +529,8 @@ function NumberCell({
 function CustomExpenseList({
   items,
   listKey,
+  labelRatio,
+  onLabelRatioChange,
   onAdd,
   onChange,
   onRemove,
@@ -520,6 +538,8 @@ function CustomExpenseList({
 }: {
   items: ExpenseItem[];
   listKey: ExpenseListKey;
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
   onAdd: (listKey: ExpenseListKey) => void;
   onChange: (
     listKey: ExpenseListKey,
@@ -535,6 +555,8 @@ function CustomExpenseList({
         <ExpenseEditor
           key={item.id}
           item={item}
+          labelRatio={labelRatio}
+          onLabelRatioChange={onLabelRatioChange}
           onChange={(changes) => onChange(listKey, item.id, changes)}
           onRemove={() => onRemove(listKey, item.id)}
         />
@@ -552,71 +574,203 @@ function CustomExpenseList({
 
 function ExpenseEditor({
   item,
+  labelRatio,
+  onLabelRatioChange,
   onChange,
   onRemove,
 }: {
   item: ExpenseItem;
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
   onChange: (changes: Partial<Pick<ExpenseItem, "label" | "amount">>) => void;
   onRemove: () => void;
 }) {
   return (
-    <div className="dynamic-expense-grid">
-      <input
-        type="text"
-        className="sheet-input sheet-input-text expense-name-input"
+    <ResizableExpenseRow
+      labelRatio={labelRatio}
+      onLabelRatioChange={onLabelRatioChange}
+    >
+      <ExpenseLabelInput
         value={item.label}
-        placeholder="Gider adı"
-        onChange={(event) => onChange({ label: event.target.value })}
+        onChange={(label) => onChange({ label })}
       />
-      <input
-        type="number"
-        inputMode="decimal"
-        min={0}
-        className="sheet-input"
-        value={item.amount}
-        onChange={(event) => onChange({ amount: Number(event.target.value) || 0 })}
-      />
-      <button
-        type="button"
-        onClick={onRemove}
-        className="danger-button"
-        aria-label="Kalemi sil"
-      >
-        ×
-      </button>
-    </div>
+      <div className="expense-value-cell">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          className="sheet-input expense-value-input"
+          value={item.amount}
+          onChange={(event) =>
+            onChange({ amount: Number(event.target.value) || 0 })
+          }
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="danger-button sheet-remove-button"
+          aria-label="Kalemi sil"
+        >
+          ×
+        </button>
+      </div>
+    </ResizableExpenseRow>
   );
 }
 
 function EquipmentEditor({
   item,
+  labelRatio,
+  onLabelRatioChange,
   onChange,
   onRemove,
 }: {
   item: ExpenseItem;
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
   onChange: (changes: Partial<Pick<ExpenseItem, "amount">>) => void;
   onRemove: () => void;
 }) {
   return (
-    <div className="dynamic-expense-grid">
+    <ResizableExpenseRow
+      labelRatio={labelRatio}
+      onLabelRatioChange={onLabelRatioChange}
+    >
       <div className="static-expense-label">{item.label}</div>
-      <input
-        type="number"
-        inputMode="decimal"
-        min={0}
-        className="sheet-input"
-        value={item.amount}
-        onChange={(event) => onChange({ amount: Number(event.target.value) || 0 })}
+      <div className="expense-value-cell">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          className="sheet-input expense-value-input"
+          value={item.amount}
+          onChange={(event) =>
+            onChange({ amount: Number(event.target.value) || 0 })
+          }
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="danger-button sheet-remove-button"
+          aria-label="Kalemi sil"
+        >
+          ×
+        </button>
+      </div>
+    </ResizableExpenseRow>
+  );
+}
+
+function ResizableExpenseRow({
+  labelRatio,
+  onLabelRatioChange,
+  children,
+}: {
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
+  children: React.ReactNode;
+}) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+
+  function updateRatio(nextLabelWidth: number) {
+    const row = rowRef.current;
+    if (!row) return;
+
+    const rowRect = row.getBoundingClientRect();
+    onLabelRatioChange(
+      calculateExpenseLabelRatio(nextLabelWidth, rowRect.width)
+    );
+  }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updateRatio(event.clientX);
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    updateRatio(event.clientX);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const row = rowRef.current;
+    if (!row) return;
+
+    const rowRect = row.getBoundingClientRect();
+    const availableWidth = Math.max(
+      EXPENSE_ROW_LAYOUT.minimumLabelWidth,
+      rowRect.width - EXPENSE_ROW_LAYOUT.minimumValueCellWidth
+    );
+    const currentLabelWidth = labelRatio * availableWidth;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      updateRatio(
+        currentLabelWidth - EXPENSE_ROW_LAYOUT.keyboardAdjustmentWidth
+      );
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      updateRatio(
+        currentLabelWidth + EXPENSE_ROW_LAYOUT.keyboardAdjustmentWidth
+      );
+    }
+  }
+
+  return (
+    <div
+      ref={rowRef}
+      className="dynamic-expense-grid"
+      style={{ "--expense-label-ratio": labelRatio } as CSSProperties}
+    >
+      {children}
+      <div
+        className="expense-divider"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Etiket ve değer alanı genişliğini ayarla"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(labelRatio * 100)}
+        tabIndex={0}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onKeyDown={handleKeyDown}
       />
-      <button
-        type="button"
-        onClick={onRemove}
-        className="danger-button"
-        aria-label="Kalemi sil"
-      >
-        ×
-      </button>
     </div>
+  );
+}
+
+function ExpenseLabelInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows={1}
+      className="expense-label-input"
+      value={value}
+      placeholder={"Gider ad\u0131"}
+      spellCheck={false}
+      onChange={(event) => onChange(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.preventDefault();
+      }}
+    />
   );
 }
 
@@ -624,6 +778,8 @@ function PersonalExpenseSection({
   enabled,
   open,
   items,
+  labelRatio,
+  onLabelRatioChange,
   onEnabledChange,
   onOpenChange,
   onAdd,
@@ -633,6 +789,8 @@ function PersonalExpenseSection({
   enabled: boolean;
   open: boolean;
   items: ExpenseItem[];
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
   onEnabledChange: (enabled: boolean) => void;
   onOpenChange: (open: boolean) => void;
   onAdd: (listKey: ExpenseListKey) => void;
@@ -668,6 +826,8 @@ function PersonalExpenseSection({
           <ExpenseEditor
             key={item.id}
             item={item}
+            labelRatio={labelRatio}
+            onLabelRatioChange={onLabelRatioChange}
             onChange={(changes) => onChange("personalExpenseItems", item.id, changes)}
             onRemove={() => onRemove("personalExpenseItems", item.id)}
           />
