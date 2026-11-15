@@ -1,4 +1,11 @@
 import type { CalculatorInputs, ExpenseItem } from "./types.ts";
+import type { VehicleOption } from "./types.ts";
+
+export const VEHICLE_OPTIONS: VehicleOption[] = [
+  { id: "honda-pcx-160", label: "Honda PCX 160", price: 135000 },
+  { id: "yamaha-nmax-125", label: "Yamaha NMAX 125", price: 128000 },
+  { id: "honda-vision-110", label: "Honda Vision 110", price: 92000 },
+];
 
 export const DEFAULT_EQUIPMENT_ITEMS: ExpenseItem[] = [
   { id: "helmet", label: "ECE onayl\u0131 kask", amount: 4000 },

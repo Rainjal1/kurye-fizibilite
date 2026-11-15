@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { CSSProperties } from "react";
 import {
   CalculatorInputs,
   ExpenseItem,
   ProjectionPoint,
 } from "@/lib/types";
-import { DEFAULT_INPUTS } from "@/lib/constants";
-import { calculateFeasibility, formatTRY } from "@/lib/calculations";
+import { DEFAULT_INPUTS, VEHICLE_OPTIONS } from "@/lib/constants";
+import {
+  calculateFeasibility,
+  calculateVariableExpenseDefaults,
+  formatTRY,
+} from "@/lib/calculations";
 import {
   calculateExpenseLabelRatio,
   EXPENSE_ROW_LAYOUT,
@@ -22,6 +34,16 @@ type ExpenseListKey =
 
 type Theme = "light" | "dark";
 
+const LabelRatioContext = createContext<{
+  labelRatio: number;
+  onLabelRatioChange: (ratio: number) => void;
+}>({
+  labelRatio: EXPENSE_ROW_LAYOUT.defaultLabelRatio,
+  onLabelRatioChange: function (ratio: number) {
+    return ratio;
+  },
+});
+
 type NumberFieldKey = {
   [K in keyof CalculatorInputs]: CalculatorInputs[K] extends number ? K : never;
 }[keyof CalculatorInputs];
@@ -30,12 +52,27 @@ export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
   const [theme, setTheme] = useState<Theme>("light");
   const [personalExpensesOpen, setPersonalExpensesOpen] = useState(false);
+  const [chartBelowResults, setChartBelowResults] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("custom");
   const [removedFields, setRemovedFields] = useState<
     ReadonlySet<NumberFieldKey>
   >(new Set());
   const [expenseLabelRatio, setExpenseLabelRatio] = useState<number>(
     EXPENSE_ROW_LAYOUT.defaultLabelRatio
   );
+
+  useEffect(function () {
+    const defaults = calculateVariableExpenseDefaults(
+      inputs.dailyPackages,
+      inputs.workingDaysPerMonth
+    );
+    setInputs(function (previousInputs) {
+      return {
+        ...previousInputs,
+        ...defaults,
+      };
+    });
+  }, [inputs.dailyPackages, inputs.workingDaysPerMonth]);
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
@@ -62,6 +99,7 @@ export default function Calculator() {
   function resetInputs() {
     setInputs(DEFAULT_INPUTS);
     setPersonalExpensesOpen(false);
+    setSelectedVehicleId("custom");
     setRemovedFields(new Set());
   }
 
@@ -76,6 +114,127 @@ export default function Calculator() {
   ) {
     setInputs((previous) => ({ ...previous, [key]: value }));
   }
+
+  function selectVehicle(vehicleId: string) {
+    setSelectedVehicleId(vehicleId);
+
+    const vehicle = VEHICLE_OPTIONS.find((option) => option.id === vehicleId);
+    if (vehicle) {
+      update("vehicleCost", vehicle.price);
+    }
+  }
+
+  function updateVehicleCost(value: number) {
+    setSelectedVehicleId("custom");
+    update("vehicleCost", value);
+  }
+
+  const chartSection = (
+    <section className="glass-card p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-heading text-xl font-bold tracking-tight sm:text-2xl">
+            Kümülatif Kasa
+          </h2>
+          <p className="text-muted mt-1 text-sm">
+            İlk yatırımın etkisinden başlayarak aylık net kâr birikimi gösterilir.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="chart-horizon-field">
+            <span>Grafik ufku</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={120}
+              value={inputs.projectionMonths}
+              onChange={(event) =>
+                update("projectionMonths", Number(event.target.value) || 1)
+              }
+            />
+            <span>ay</span>
+          </label>
+          <button
+            type="button"
+            className="chart-settings-button"
+            aria-pressed={chartBelowResults}
+            onClick={() => setChartBelowResults((current) => !current)}
+            title={
+              chartBelowResults ? "Grafiği üste al" : "Grafiği alta al"
+            }
+          >
+            <span />
+            <span />
+            <span />
+            <span className="sr-only">
+              {chartBelowResults ? "Grafiği üste al" : "Grafiği alta al"}
+            </span>
+          </button>
+        </div>
+      </div>
+      <div className="mb-4 grid grid-cols-2 gap-2 text-xs font-bold sm:grid-cols-4">
+        <ChartStat label="İlk yatırım" value={formatTRY(result.totalStartupCost)} />
+        <ChartStat label="Aylık ciro" value={formatTRY(result.monthlyGrossRevenue)} />
+        <ChartStat label="Aylık gider" value={formatTRY(result.monthlyTotalExpenses)} />
+        <ChartStat label="Aylık net kâr" value={formatTRY(result.monthlyNetProfit)} />
+      </div>
+      <ProjectionChart
+        projection={result.projection}
+        breakEvenMonth={result.paybackMonths}
+      />
+    </section>
+  );
+
+  const resultsSection = (
+    <section className="glass-card p-4 sm:p-5">
+      <div className="mb-4">
+        <h2 className="text-heading text-xl font-bold tracking-tight sm:text-2xl">
+          Sonuçlar
+        </h2>
+      </div>
+
+      <ResultCard
+        label="Aylık Kâr"
+        value={formatTRY(result.monthlyNetProfit)}
+        tone={result.monthlyNetProfit < 0 ? "negative" : "primary"}
+      />
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <ResultCard label="Aylık Ciro" value={formatTRY(result.monthlyGrossRevenue)} />
+        <ResultCard
+          label="Aylık Gider"
+          value={formatTRY(result.monthlyTotalExpenses)}
+          details={[
+            `Sabit: ${formatTRY(result.monthlyFixedExpenses)}`,
+            `Değişken: ${formatTRY(result.monthlyVariableExpenses)}`,
+          ]}
+        />
+        <ResultCard label="İlk Yatırım" value={formatTRY(result.totalStartupCost)} />
+        <ResultCard
+          label="Başabaş Günü"
+          value={
+            result.paybackDays !== null
+              ? `${result.paybackDays} gün`
+              : "Kâra geçmiyor"
+          }
+          tone="accent"
+        />
+        <ResultCard
+          label="Grafik Sonu Kasası"
+          value={formatTRY(result.cumulativeCashAtHorizon)}
+        />
+        <ResultCard
+          label="Başabaş Günlük Paket"
+          value={
+            result.breakEvenPackagesPerDay !== null
+              ? `${result.breakEvenPackagesPerDay} paket`
+              : "-"
+          }
+        />
+      </div>
+    </section>
+  );
 
   function updateExpenseItem(
     listKey: ExpenseListKey,
@@ -153,8 +312,14 @@ export default function Calculator() {
           </div>
 
           <div className="space-y-4">
+            <LabelRatioContext.Provider
+              value={{
+                labelRatio: expenseLabelRatio,
+                onLabelRatioChange: setExpenseLabelRatio,
+              }}
+            >
             <FormSection title="Gelirler">
-              <div className="sheet-grid">
+              <div className="space-y-1.5">
                 <NumberCell
                   label="Günlük paket"
                   value={inputs.dailyPackages}
@@ -176,20 +341,10 @@ export default function Calculator() {
                   isRemoved={removedFields.has("workingDaysPerMonth")}
                   onRemove={() => removeNumberField("workingDaysPerMonth")}
                 />
-                <NumberCell
-                  label="Grafik ufku (ay)"
-                  value={inputs.projectionMonths}
-                  onChange={(value) => update("projectionMonths", value)}
-                  isRemoved={removedFields.has("projectionMonths")}
-                  onRemove={() => removeNumberField("projectionMonths")}
-                />
               </div>
-              <p className="text-muted mt-2 text-xs font-semibold">
-                Tahmini aylık brüt ciro: {formatTRY(result.monthlyGrossRevenue)}
-              </p>
             </FormSection>
 
-            <FormSection title="Ekipman">
+            <FormSection title="İlk Yatırım">
               <details className="collapsible-panel">
                 <summary>
                   <span>Ekipman kalemlerini düzenle</span>
@@ -219,18 +374,25 @@ export default function Calculator() {
                   </button>
                 </div>
               </details>
-              <p className="text-muted mt-2 text-xs">
-                Uber Eats ve Türkiye motosiklet güvenlik gereksinimleri referans
-                alınmıştır. Isı yalıtımlı çanta en az 44x35x40 cm olmalıdır.
-              </p>
-            </FormSection>
-
-            <FormSection title="Diğer Başlangıç Maliyetleri">
-              <div className="sheet-grid">
+              <div className="mt-1.5 space-y-1.5">
+                <label className="vehicle-field">
+                  <span>Araç modeli</span>
+                  <select
+                    value={selectedVehicleId}
+                    onChange={(event) => selectVehicle(event.target.value)}
+                  >
+                    {VEHICLE_OPTIONS.map((vehicle) => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.label} — {formatTRY(vehicle.price)}
+                      </option>
+                    ))}
+                    <option value="custom">Diğer / elle gir</option>
+                  </select>
+                </label>
                 <NumberCell
                   label="Araç (₺)"
                   value={inputs.vehicleCost}
-                  onChange={(value) => update("vehicleCost", value)}
+                  onChange={updateVehicleCost}
                   isRemoved={removedFields.has("vehicleCost")}
                   onRemove={() => removeNumberField("vehicleCost")}
                 />
@@ -249,9 +411,6 @@ export default function Calculator() {
                   onRemove={() => removeNumberField("companySetupCost")}
                 />
               </div>
-              <p className="text-muted mt-2 text-xs font-semibold">
-                Toplam başlangıç maliyeti: {formatTRY(result.totalStartupCost)}
-              </p>
             </FormSection>
 
             <FormSection title="Aylık Sabit Giderler">
@@ -348,121 +507,34 @@ export default function Calculator() {
                 addLabel="Değişken gider ekle"
               />
             </FormSection>
+            </LabelRatioContext.Provider>
           </div>
         </section>
 
-        <section className="glass-card p-4 sm:p-5 xl:sticky xl:top-20">
-          <div className="mb-4">
-            <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-              Sonuçlar
-            </h2>
-          </div>
-
-          <ResultCard
-            label="Aylık Net Kâr"
-            value={formatTRY(result.monthlyNetProfit)}
-            tone={result.monthlyNetProfit < 0 ? "negative" : "primary"}
-          />
-
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <ResultCard
-              label="Aylık Brüt Ciro"
-              value={formatTRY(result.monthlyGrossRevenue)}
-            />
-            <ResultCard
-              label="Aylık Toplam Gider"
-              value={formatTRY(result.monthlyTotalExpenses)}
-            />
-            <ResultCard
-              label="İlk Yatırım"
-              value={formatTRY(result.totalStartupCost)}
-            />
-            <ResultCard
-              label="Başabaş Ayı"
-              value={
-                result.paybackMonths !== null
-                  ? `${result.paybackMonths}. ay`
-                  : "Kâra geçmiyor"
-              }
-              tone="accent"
-            />
-            <ResultCard
-              label="Grafik Sonu Kasası"
-              value={formatTRY(result.cumulativeCashAtHorizon)}
-            />
-            <ResultCard
-              label="Başabaş Günlük Paket"
-              value={
-                result.breakEvenPackagesPerDay !== null
-                  ? `${result.breakEvenPackagesPerDay} paket`
-                  : "-"
-              }
-            />
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <ExpenseTable
-              title="Gelirler"
-              items={[
-                { id: "packages", label: "Günlük paket", amount: inputs.dailyPackages },
-                {
-                  id: "price",
-                  label: "Ortalama paket ücreti",
-                  amount: inputs.averagePackagePrice,
-                },
-                {
-                  id: "days",
-                  label: "Aylık çalışma günü",
-                  amount: inputs.workingDaysPerMonth,
-                },
-              ]}
-              total={result.monthlyGrossRevenue}
-              totalLabel="Aylık brüt ciro"
-            />
-            <ExpenseTable
-              title="Sabit Giderler"
-              items={result.fixedExpenseItems}
-              total={result.monthlyFixedExpenses}
-            />
-            <ExpenseTable
-              title="Değişken Giderler"
-              items={result.variableExpenseItems}
-              total={result.monthlyVariableExpenses}
-            />
-          </div>
-
-          <div className="info-panel mt-4">
-            <p className="text-xs font-bold uppercase tracking-wide">Önemli Notlar</p>
-            <ul className="text-muted mt-2 space-y-1.5 text-xs leading-relaxed">
-              {result.assumptions.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        <div className="space-y-5 xl:sticky xl:top-20">
+          {chartBelowResults ? (
+            <>
+              {resultsSection}
+              {chartSection}
+            </>
+          ) : (
+            <>
+              {chartSection}
+              {resultsSection}
+            </>
+          )}
+        </div>
       </div>
 
       <section className="glass-card mt-5 p-4 sm:p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-heading mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-              Kümülatif Kasası
-            </h2>
-            <p className="text-muted mt-1 text-sm">
-              İlk yatırımın etkisinden başlayarak aylık net kâr birikimi gösterilir.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs font-bold sm:grid-cols-4">
-            <ChartStat label="İlk yatırım" value={formatTRY(result.totalStartupCost)} />
-            <ChartStat label="Aylık ciro" value={formatTRY(result.monthlyGrossRevenue)} />
-            <ChartStat label="Aylık gider" value={formatTRY(result.monthlyTotalExpenses)} />
-            <ChartStat label="Aylık net kâr" value={formatTRY(result.monthlyNetProfit)} />
-          </div>
-        </div>
-        <ProjectionChart
-          projection={result.projection}
-          breakEvenMonth={result.paybackMonths}
-        />
+        <h2 className="text-heading text-xl font-bold tracking-tight sm:text-2xl">
+          Önemli Notlar
+        </h2>
+        <ul className="text-muted mt-3 grid gap-2 text-xs leading-relaxed sm:grid-cols-2 xl:grid-cols-3">
+          {result.assumptions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </section>
     </>
   );
@@ -498,31 +570,34 @@ function NumberCell({
   isRemoved: boolean;
   onRemove: () => void;
 }) {
+  const { labelRatio, onLabelRatioChange } = useContext(LabelRatioContext);
   if (isRemoved) {
     return null;
   }
 
   return (
-    <div className="sheet-cell">
-      <span className="sheet-cell-label">{label}</span>
-      <input
-        type="number"
-        inputMode="decimal"
-        min={0}
-        aria-label={label}
-        className="sheet-input"
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value) || 0)}
-      />
-      <button
-        type="button"
-        onClick={onRemove}
-        className="danger-button sheet-remove-button"
-        aria-label={`${label} satırını sil`}
-      >
-        ×
-      </button>
-    </div>
+    <ResizableExpenseRow labelRatio={labelRatio} onLabelRatioChange={onLabelRatioChange}>
+      <div className="static-expense-label">{label}</div>
+      <div className="expense-value-cell">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          aria-label={label}
+          className="sheet-input expense-value-input"
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value) || 0)}
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="danger-button sheet-remove-button"
+          aria-label={`${label} satırını sil`}
+        >
+          ×
+        </button>
+      </div>
+    </ResizableExpenseRow>
   );
 }
 
@@ -844,46 +919,6 @@ function PersonalExpenseSection({
   );
 }
 
-function ExpenseTable({
-  title,
-  items,
-  total,
-  totalLabel = "Toplam",
-}: {
-  title: string;
-  items: ExpenseItem[];
-  total: number;
-  totalLabel?: string;
-}) {
-  return (
-    <div className="summary-table">
-      <div className="summary-table-header">{title}</div>
-      <table className="w-full text-left text-sm">
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>{item.label || "İsimsiz kalem"}</td>
-              <td className="text-right font-bold">{formatNumber(item.amount)}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>{totalLabel}</td>
-            <td className="text-right">{formatTRY(total)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 1 }).format(
-    value
-  );
-}
-
 function ChartStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="chart-stat">
@@ -965,6 +1000,21 @@ function ProjectionChart({
           {month}. ay
         </text>
       ))}
+      <line
+        x1={padding.left}
+        x2={width - padding.right}
+        y1={y(0)}
+        y2={y(0)}
+        className="chart-zero-line"
+      />
+      <text
+        x={padding.left - 12}
+        y={y(0) + 4}
+        textAnchor="end"
+        className="chart-zero-label"
+      >
+        0 TL
+      </text>
       <polyline
         points={points}
         fill="none"
@@ -1009,10 +1059,12 @@ function ResultCard({
   label,
   value,
   tone = "default",
+  details = [],
 }: {
   label: string;
   value: string;
   tone?: "default" | "primary" | "accent" | "negative";
+  details?: string[];
 }) {
   return (
     <div
@@ -1044,6 +1096,13 @@ function ResultCard({
       >
         {value}
       </p>
+      {details.length > 0 ? (
+        <div className="result-card-details">
+          {details.map((detail) => (
+            <span key={detail}>{detail}</span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

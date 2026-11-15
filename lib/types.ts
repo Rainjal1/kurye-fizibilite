@@ -4,6 +4,12 @@ export interface ExpenseItem {
   amount: number;
 }
 
+export interface VehicleOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
 export interface CalculatorInputs {
   dailyPackages: number;
   averagePackagePrice: number;
@@ -35,6 +41,7 @@ export interface CalculationResult {
   totalStartupCost: number;
   equipmentCost: number;
   paybackMonths: number | null;
+  paybackDays: number | null;
   cumulativeCashAtHorizon: number;
   breakEvenPackagesPerDay: number | null;
   fixedExpenseItems: ExpenseItem[];

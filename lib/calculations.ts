@@ -5,6 +5,16 @@ import type {
   ProjectionPoint,
 } from "./types.ts";
 
+export function calculateVariableExpenseDefaults(
+  dailyPackages: number,
+  workingDaysPerMonth: number
+) {
+  return {
+    fuelOrElectricityMonthly: 1440 + 90 * workingDaysPerMonth + 30 * dailyPackages,
+    maintenanceMonthly: 75 * workingDaysPerMonth,
+  };
+}
+
 export function calculateFeasibility(
   inputs: CalculatorInputs
 ): CalculationResult {
@@ -74,6 +84,13 @@ export function calculateFeasibility(
   const totalStartupCost =
     vehicleCost + equipmentCost + licenseAndDocsCost + companySetupCost;
 
+  let paybackDays: number | null = null;
+  if (totalStartupCost === 0) {
+    paybackDays = 0;
+  } else if (monthlyNetProfit > 0) {
+    paybackDays = Math.ceil((totalStartupCost / monthlyNetProfit) * 30);
+  }
+
   const safeProjectionMonths = Math.min(
     120,
     Math.max(1, Math.round(projectionMonths || 1))
@@ -119,8 +136,8 @@ export function calculateFeasibility(
     "Paket başı ücret, 2026 platform tarifelerinin karma ortalamasıdır; mesafe, saat ve bonuslara göre değişir.",
     "Varsayılan Bağ-Kur primi, 2026 brüt asgari ücrete göre aylık 11.808 TL seviyesindedir.",
     "Yakıt / elektrik ve bakım tutarları Kasım 2026 fiyat seviyelerine göre tahminidir; gerçek tüketiminizle güncelleyin.",
-    "Ekipman listesi Uber Eats ve Uber Moto gereksinimleri ile Türkiye motosiklet güvenlik pratiği referans alınarak hazırlanmıştır; fiyatlar Kasım 2026 tahminidir.",
-    "Isı yalıtımlı çanta Uber Eats için en az 44x35x40 cm olmalıdır; marka zorunlu değildir.",
+    "Uber Eats ve Türkiye motosiklet güvenlik gereksinimleri referans alınmıştır. Isı yalıtımlı çanta en az 44x35x40 cm olmalıdır.",
+    "Ekipman fiyatları Kasım 2026 tahminidir.",
     "Gelir vergisi ve olası tevkifatlar bu versiyonda hesaba katılmamıştır.",
     "Bu bir tahmindir, yatırım tavsiyesi değildir.",
   ];
@@ -134,6 +151,7 @@ export function calculateFeasibility(
     totalStartupCost,
     equipmentCost,
     paybackMonths,
+  paybackDays,
     cumulativeCashAtHorizon,
     breakEvenPackagesPerDay,
     fixedExpenseItems,
