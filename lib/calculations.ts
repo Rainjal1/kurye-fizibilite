@@ -119,11 +119,13 @@ export function calculateFeasibility(
     }),
   ];
 
-  let paybackMonths: number | null = null;
   const cumulativeCashAtHorizon = projection[projection.length - 1].cumulativeCash;
-  paybackMonths =
-    projection.find((point) => point.month > 0 && point.cumulativeCash >= 0)
-      ?.month ?? null;
+  let paybackMonths: number | null = null;
+  if (totalStartupCost === 0) {
+    paybackMonths = 0;
+  } else if (monthlyNetProfit > 0) {
+    paybackMonths = totalStartupCost / monthlyNetProfit;
+  }
 
   let breakEvenPackagesPerDay: number | null = null;
   if (averagePackagePrice > 0 && workingDaysPerMonth > 0) {

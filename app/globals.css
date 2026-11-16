@@ -197,6 +197,10 @@ body {
     background: var(--surface-strong);
   }
 
+  .dynamic-expense-grid:focus-within {
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.48);
+  }
+
   .expense-label-input {
     display: block;
     width: 100%;
@@ -223,6 +227,41 @@ body {
     min-width: var(--expense-value-cell-min-width);
     border-left: var(--field-divider-width) solid var(--surface-border);
     background: var(--field-background);
+  }
+
+  .revenue-value-cell {
+    grid-template-columns: minmax(0, 1fr) 3.35rem;
+  }
+
+  .stepper-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-self: center;
+    gap: 0.12rem;
+    padding-right: 0.16rem;
+  }
+
+  .stepper-button {
+    display: grid;
+    place-items: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    background: rgba(37, 99, 235, 0.08);
+    color: var(--brand-blue);
+    font-size: 0.85rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .stepper-button:hover {
+    background: rgba(37, 99, 235, 0.16);
+  }
+
+  .stepper-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
   }
 
   .expense-value-cell .sheet-input {
@@ -651,7 +690,42 @@ body {
     display: block;
     margin-top: 0.15rem;
     color: var(--strong-foreground);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+  }
+
+  .chart-panel {
+    position: relative;
+  }
+
+  .chart-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    border-radius: 0;
+  }
+
+  .chart-fullscreen .chart-canvas {
+    flex: 1;
+    min-height: 70vh;
+  }
+
+  .chart-expand-button {
+    border-radius: 0.65rem;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+    padding: 0.42rem 0.62rem;
+    color: var(--foreground);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .chart-expand-button[aria-pressed="true"] {
+    border-color: rgba(37, 99, 235, 0.35);
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--brand-blue);
   }
 
   .chart-canvas {
@@ -665,20 +739,29 @@ body {
 
   .chart-label {
     fill: var(--muted-foreground);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
   }
 
   .chart-zero-line {
     stroke: var(--strong-foreground);
-    stroke-width: 2;
-    stroke-dasharray: 8 5;
+    stroke-width: 3;
   }
 
   .chart-zero-label {
     fill: var(--strong-foreground);
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 800;
+  }
+
+  .chart-anchor-label {
+    fill: var(--strong-foreground);
+    font-size: 15px;
+    font-weight: 900;
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
   }
 
   .chart-line {

@@ -21,6 +21,8 @@ import {
   calculateVariableExpenseDefaults,
   formatTRY,
 } from "@/lib/calculations";
+import { formatCompactTRY } from "@/lib/chart";
+import { adjustNumberValue } from "@/lib/inputs";
 import {
   calculateExpenseLabelRatio,
   EXPENSE_ROW_LAYOUT,
@@ -53,6 +55,7 @@ export default function Calculator() {
   const [theme, setTheme] = useState<Theme>("light");
   const [personalExpensesOpen, setPersonalExpensesOpen] = useState(false);
   const [chartBelowResults, setChartBelowResults] = useState(false);
+  const [chartFullscreen, setChartFullscreen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState("custom");
   const [removedFields, setRemovedFields] = useState<
     ReadonlySet<NumberFieldKey>
@@ -130,7 +133,11 @@ export default function Calculator() {
   }
 
   const chartSection = (
-    <section className="glass-card p-4 sm:p-5">
+    <section
+      className={`glass-card chart-panel p-4 sm:p-5 ${
+        chartFullscreen ? "chart-fullscreen" : ""
+      }`}
+    >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-heading text-xl font-bold tracking-tight sm:text-2xl">
@@ -141,6 +148,14 @@ export default function Calculator() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="chart-expand-button"
+            aria-pressed={chartFullscreen}
+            onClick={() => setChartFullscreen((current) => !current)}
+          >
+            {chartFullscreen ? "Küçült" : "Tam ekran"}
+          </button>
           <label className="chart-horizon-field">
             <span>Grafik ufku</span>
             <input
@@ -320,26 +335,23 @@ export default function Calculator() {
             >
             <FormSection title="Gelirler">
               <div className="space-y-1.5">
-                <NumberCell
+                <RevenueNumberCell
                   label="Günlük paket"
                   value={inputs.dailyPackages}
                   onChange={(value) => update("dailyPackages", value)}
-                  isRemoved={removedFields.has("dailyPackages")}
-                  onRemove={() => removeNumberField("dailyPackages")}
+                  step={1}
                 />
-                <NumberCell
+                <RevenueNumberCell
                   label="Paket ücreti (₺)"
                   value={inputs.averagePackagePrice}
                   onChange={(value) => update("averagePackagePrice", value)}
-                  isRemoved={removedFields.has("averagePackagePrice")}
-                  onRemove={() => removeNumberField("averagePackagePrice")}
+                  step={5}
                 />
-                <NumberCell
+                <RevenueNumberCell
                   label="Aylık gün"
                   value={inputs.workingDaysPerMonth}
                   onChange={(value) => update("workingDaysPerMonth", value)}
-                  isRemoved={removedFields.has("workingDaysPerMonth")}
-                  onRemove={() => removeNumberField("workingDaysPerMonth")}
+                  step={1}
                 />
               </div>
             </FormSection>
@@ -596,6 +608,59 @@ function NumberCell({
         >
           ×
         </button>
+      </div>
+    </ResizableExpenseRow>
+  );
+}
+
+function RevenueNumberCell({
+  label,
+  value,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  step: number;
+  onChange: (value: number) => void;
+}) {
+  const { labelRatio, onLabelRatioChange } = useContext(LabelRatioContext);
+
+  return (
+    <ResizableExpenseRow
+      labelRatio={labelRatio}
+      onLabelRatioChange={onLabelRatioChange}
+    >
+      <div className="static-expense-label">{label}</div>
+      <div className="expense-value-cell revenue-value-cell">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={step}
+          aria-label={label}
+          className="sheet-input expense-value-input"
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value) || 0)}
+        />
+        <div className="stepper-controls">
+          <button
+            type="button"
+            className="stepper-button"
+            aria-label={`${label} azalt`}
+            onClick={() => onChange(adjustNumberValue(value, -1, step))}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="stepper-button"
+            aria-label={`${label} artır`}
+            onClick={() => onChange(adjustNumberValue(value, 1, step))}
+          >
+            +
+          </button>
+        </div>
       </div>
     </ResizableExpenseRow>
   );
@@ -935,9 +1000,9 @@ function ProjectionChart({
   projection: ProjectionPoint[];
   breakEvenMonth: number | null;
 }) {
-  const width = 820;
-  const height = 320;
-  const padding = { top: 24, right: 24, bottom: 40, left: 108 };
+  const width = 920;
+  const height = 390;
+  const padding = { top: 32, right: 32, bottom: 48, left: 118 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const values = projection.map((point) => point.cumulativeCash);
@@ -962,6 +1027,13 @@ function ProjectionChart({
     .map((point) => `${x(point.month)},${y(point.cumulativeCash)}`)
     .join(" ");
   const breakEvenX = breakEvenMonth !== null ? x(breakEvenMonth) : null;
+  const anchorMonths = new Set<number>([0, maxMonth]);
+  if (breakEvenMonth !== null) {
+    anchorMonths.add(Math.ceil(breakEvenMonth));
+  }
+  const anchorPoints = projection.filter((point) =>
+    anchorMonths.has(point.month)
+  );
 
   return (
     <svg
@@ -985,7 +1057,7 @@ function ProjectionChart({
             textAnchor="end"
             className="chart-label"
           >
-            {formatTRY(value)}
+            {formatCompactTRY(value)}
           </text>
         </g>
       ))}
@@ -1015,10 +1087,24 @@ function ProjectionChart({
       >
         0 TL
       </text>
+      {anchorPoints.map((point) => (
+        <text
+          key={`anchor-${point.month}`}
+          x={Math.min(
+            Math.max(x(point.month), padding.left + 45),
+            width - padding.right - 45
+          )}
+          y={Math.max(y(point.cumulativeCash) - 14, padding.top + 8)}
+          textAnchor="middle"
+          className="chart-anchor-label"
+        >
+          {formatCompactTRY(point.cumulativeCash)}
+        </text>
+      ))}
       <polyline
         points={points}
         fill="none"
-        strokeWidth="3"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="chart-line"
@@ -1028,7 +1114,7 @@ function ProjectionChart({
           key={point.month}
           cx={x(point.month)}
           cy={y(point.cumulativeCash)}
-          r="3"
+          r="4"
           className="chart-point"
         >
           <title>

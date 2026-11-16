@@ -34,6 +34,14 @@ test("payback is reported as an exact day count", function () {
   assert.equal(result.paybackDays, 0);
 });
 
+test("payback month matches the exact investment recovery point", function () {
+  const result = calculateFeasibility(DEFAULT_INPUTS);
+  const expectedPaybackMonths =
+    result.totalStartupCost / result.monthlyNetProfit;
+
+  assert.ok(Math.abs(result.paybackMonths! - expectedPaybackMonths) < 0.001);
+});
+
 test("vehicle options offer three popular motorcycle models with prices", function () {
   assert.equal(VEHICLE_OPTIONS.length, 3);
   for (const option of VEHICLE_OPTIONS) {
