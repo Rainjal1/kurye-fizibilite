@@ -1,0 +1,21 @@
+# Görevler
+
+Bu dosya tamamlanan görevlerin kaydını tutar. Yeni görevler `Yapılacak.md` dosyasına yazılır; görev tamamlandığında aşağıdaki tabloya tarih ve saat bilgisiyle eklenir.
+
+| # | Görev | Durum | Tamamlanma Tarihi / Saati | Detaylar |
+|---|---|---|---|---|
+| 1 | Sabit ve değişken gider ayrı gösterimi | Yapıldı | 12 Kasım 2026 Perşembe, 19:34 | `ExpenseItem` tipi eklendi; sabit ve değişken giderler hesaplamada ayrıldı; arayüzde kalem/tutar tabloları ve toplamlar gösteriliyor. |
+| 2 | Sabit ve değişken giderlere "ekle" butonu | Yapıldı | 12 Kasım 2026 Perşembe, 19:34 | Sabit ve değişken giderler için ekleme butonları eklendi; yeni kalemlerde ad, tutar ve silme işlemleri kullanılabiliyor. |
+| 3 | Kıyafet, çanta ve diğer ekipmanların ayrı gösterimi | Yapıldı | 12 Kasım 2026 Perşembe, 19:34 | Varsayılan ekipman listesi oluşturuldu; kıyafet, çanta, telefon, powerbank ve kask kamerası gibi kalemler ayrı gösteriliyor; tutarlar düzenlenebiliyor. |
+| 4 | En altta 3 yıllık, değiştirilebilir grafik | Yapıldı | 12 Kasım 2026 Perşembe, 19:34 | Varsayılan grafik ufku 36 ay olarak ayarlandı; brüt ciro, toplam gider ve net kâr serileri erişilebilir SVG grafiğinde gösteriliyor; ay sayısı değiştirilebiliyor. |
+| 5 | Dark mode, kompakt form, kümülatif kasa grafiği, gelir/gider grupları ve kaydırma performansı iyileştirmesi | Yapıldı | 13 Kasım 2026 Cuma, 19:45 | Kullanıcı ve sistem tercihi destekleyen dark mode eklendi; ekipman listesi katlanabilir oldu ve kapalıyken toplam maliyeti gösteriyor; form daha kompakt bir düzene taşındı; grafik ilk yatırım değerini kartta, kümülatif kasayı tek çizgi ve başabaş ayını işaretleyerek gösteriyor; gelir, sabit gider ve değişken gider grupları ayrıldı; ağır blur/animasyon/transform etkileri azaltılarak kaydırma performansı iyileştirildi. |
+| 6 | Ekipman gider adı sıtununun kaldırılması | Yapıldı | 14 Kasım 2026 Cumartesi, 01:20 | Ekipman kalemlerinde ad alanı salt okunur etikete dönüştürüldü; yalnızca tutar düzenlenebiliyor, gereksiz gider adı sıtunu kaldırıldı. |
+| 7 | Gelir ve gider formlarının iki sütuna indirilmesi | Yapıldı | 14 Kasım 2026 Cumartesi, 01:20 | Tüm gelir ve gider formları her boyutta en fazla iki sütuna sabitlendi; etiket ve tutar ayrımı CSS değişkeniyle ayarlanabilir hale geldi, uzun etiketler çoklu satıra sarıyor. |
+| 8 | Kişisel giderler alt başlığı | Yapıldı | 14 Kasım 2026 Cumartesi, 01:20 | Aylık sabit giderlere onay kutuslu kişisel giderler bölümü eklendi; kira, faturalar, market, ulaşım ve sağlık kalemleri düzenlenebiliyor, hesaplamaya isteğe bağlı dahil ediliyor. |
+| 9 | Adım etiketlerinin kaldırılması | Yapıldı | 14 Kasım 2026 Cumartesi, 01:20 | 1. Adım, 2. Adım ve 3. Adım etiketleri arayüzden kaldırıldı. |
+| 10 | Üst sağ ayar menüsü | Yapıldı | 14 Kasım 2026 Cumartesi, 01:20 | Aydınlık/karanlık mod ve varsayılana dön işlemleri sayfanın sağ üst köşesindeki üç çizgili açılır menüye taşındı. |
+| 11 | Hesap arayüzü ve sonuç düzeninin yenilenmesi | Yapıldı | 15 Kasım 2026 Pazar, 11:05 | Formlar Gelirler, İlk Yatırım, Sabit Giderler ve Değişken Giderler olarak gruplandı; değişken varsayılanları paket ve gün sayısına göre güncellendi; motor modeli seçimi eklendi; grafik ve sonuç kartları yeniden düzenlendi; kişisel giderler hesaplamaya isteğe bağlı dahil edildi; etiket boyutları ve görünümü iyileştirildi. |
+| 12 | Gelir alanlarında artır/azalt kontrolleri | Yapıldı | 16 Kasım 2026 Pazartesi, 16:01 | Gelir girdilerindeki silme butonu kaldırıldı; günlük paket, paket ücreti ve aylık gün alanlarına artır/azalt butonları eklendi. |
+| 13 | Grafiğin okunabilirliği ve tam ekran görünümü | Yapıldı | 16 Kasım 2026 Pazartesi, 16:01 | Grafik etiketleri büyütüldü ve kompakt TL biçimine geçirildi; başlangıç, başabaş ve dönem sonu değerleri grafik üzerinde gösterildi; tam ekran butonu eklendi. |
+| 14 | Hesap doğruluğu düzeltmesi | Yapıldı | 16 Kasım 2026 Pazartesi, 16:01 | Başabaş ayı artık ilk pozitif tam ay yerine yatırımın tam olarak döndüğü kesirli ay kullanılarak hesaplanıyor; sonuç kartı ve grafik uyumlu hale getirildi. |
+| 15 | Kritik girdi doğrulaması | Yapıldı | 17 Kasım 2026 Salı, 01:57 | Sayısal girdiler için merkezi sınır ve doğrulama katmanı eklendi; negatif, boş, NaN, Infinity ve aşırı büyük değerler engellendi; `projectionMonths` UI ve hesaplama motorunda ortak sınırlara bağlandı; boş girdi deneyimi korundu. |

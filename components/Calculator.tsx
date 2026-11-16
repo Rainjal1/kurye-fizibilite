@@ -22,7 +22,15 @@ import {
   formatTRY,
 } from "@/lib/calculations";
 import { formatCompactTRY } from "@/lib/chart";
-import { adjustNumberValue } from "@/lib/inputs";
+import {
+  EXPENSE_AMOUNT_LIMITS,
+  NUMBER_INPUT_LIMITS,
+  adjustNumberValue,
+  normalizeNumberInput,
+  parseNumberInput,
+  type NumberFieldKey,
+  type NumberInputLimits,
+} from "@/lib/inputs";
 import {
   calculateExpenseLabelRatio,
   EXPENSE_ROW_LAYOUT,
@@ -45,10 +53,6 @@ const LabelRatioContext = createContext<{
     return ratio;
   },
 });
-
-type NumberFieldKey = {
-  [K in keyof CalculatorInputs]: CalculatorInputs[K] extends number ? K : never;
-}[keyof CalculatorInputs];
 
 export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
@@ -115,7 +119,16 @@ export default function Calculator() {
     key: K,
     value: CalculatorInputs[K]
   ) {
-    setInputs((previous) => ({ ...previous, [key]: value }));
+    setInputs((previous) => ({
+      ...previous,
+      [key]:
+        typeof value === "number"
+          ? normalizeNumberInput(
+              value,
+              NUMBER_INPUT_LIMITS[key as NumberFieldKey]
+            )
+          : value,
+    }));
   }
 
   function selectVehicle(vehicleId: string) {
@@ -158,15 +171,14 @@ export default function Calculator() {
           </button>
           <label className="chart-horizon-field">
             <span>Grafik ufku</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={120}
+            <NumberInput
               value={inputs.projectionMonths}
-              onChange={(event) =>
-                update("projectionMonths", Number(event.target.value) || 1)
+              limits={NUMBER_INPUT_LIMITS.projectionMonths}
+              onChange={(value) =>
+                update("projectionMonths", value)
               }
+              ariaLabel="Grafik ufku ay"
+              step={1}
             />
             <span>ay</span>
           </label>
@@ -256,10 +268,18 @@ export default function Calculator() {
     id: string,
     changes: Partial<Pick<ExpenseItem, "label" | "amount">>
   ) {
+    const normalizedChanges =
+      typeof changes.amount === "number"
+        ? {
+            ...changes,
+            amount: normalizeNumberInput(changes.amount, EXPENSE_AMOUNT_LIMITS),
+          }
+        : changes;
+
     setInputs((previous) => ({
       ...previous,
       [listKey]: previous[listKey].map((item) =>
-        item.id === id ? { ...item, ...changes } : item
+        item.id === id ? { ...item, ...normalizedChanges } : item
       ),
     }));
   }
@@ -338,18 +358,21 @@ export default function Calculator() {
                 <RevenueNumberCell
                   label="Günlük paket"
                   value={inputs.dailyPackages}
+                  limits={NUMBER_INPUT_LIMITS.dailyPackages}
                   onChange={(value) => update("dailyPackages", value)}
                   step={1}
                 />
                 <RevenueNumberCell
                   label="Paket ücreti (₺)"
                   value={inputs.averagePackagePrice}
+                  limits={NUMBER_INPUT_LIMITS.averagePackagePrice}
                   onChange={(value) => update("averagePackagePrice", value)}
                   step={5}
                 />
                 <RevenueNumberCell
                   label="Aylık gün"
                   value={inputs.workingDaysPerMonth}
+                  limits={NUMBER_INPUT_LIMITS.workingDaysPerMonth}
                   onChange={(value) => update("workingDaysPerMonth", value)}
                   step={1}
                 />
@@ -404,6 +427,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Araç (₺)"
                   value={inputs.vehicleCost}
+                  limits={NUMBER_INPUT_LIMITS.vehicleCost}
                   onChange={updateVehicleCost}
                   isRemoved={removedFields.has("vehicleCost")}
                   onRemove={() => removeNumberField("vehicleCost")}
@@ -411,6 +435,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Belgeler (₺)"
                   value={inputs.licenseAndDocsCost}
+                  limits={NUMBER_INPUT_LIMITS.licenseAndDocsCost}
                   onChange={(value) => update("licenseAndDocsCost", value)}
                   isRemoved={removedFields.has("licenseAndDocsCost")}
                   onRemove={() => removeNumberField("licenseAndDocsCost")}
@@ -418,6 +443,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Şirket kuruluşu (₺)"
                   value={inputs.companySetupCost}
+                  limits={NUMBER_INPUT_LIMITS.companySetupCost}
                   onChange={(value) => update("companySetupCost", value)}
                   isRemoved={removedFields.has("companySetupCost")}
                   onRemove={() => removeNumberField("companySetupCost")}
@@ -430,6 +456,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Sigorta"
                   value={inputs.insuranceMonthly}
+                  limits={NUMBER_INPUT_LIMITS.insuranceMonthly}
                   onChange={(value) => update("insuranceMonthly", value)}
                   isRemoved={removedFields.has("insuranceMonthly")}
                   onRemove={() => removeNumberField("insuranceMonthly")}
@@ -437,6 +464,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Bağ-Kur"
                   value={inputs.bagkurMonthly}
+                  limits={NUMBER_INPUT_LIMITS.bagkurMonthly}
                   onChange={(value) => update("bagkurMonthly", value)}
                   isRemoved={removedFields.has("bagkurMonthly")}
                   onRemove={() => removeNumberField("bagkurMonthly")}
@@ -444,6 +472,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Muhasebe"
                   value={inputs.accountingMonthly}
+                  limits={NUMBER_INPUT_LIMITS.accountingMonthly}
                   onChange={(value) => update("accountingMonthly", value)}
                   isRemoved={removedFields.has("accountingMonthly")}
                   onRemove={() => removeNumberField("accountingMonthly")}
@@ -451,6 +480,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Telefon / internet"
                   value={inputs.phoneInternetMonthly}
+                  limits={NUMBER_INPUT_LIMITS.phoneInternetMonthly}
                   onChange={(value) => update("phoneInternetMonthly", value)}
                   isRemoved={removedFields.has("phoneInternetMonthly")}
                   onRemove={() => removeNumberField("phoneInternetMonthly")}
@@ -458,6 +488,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Diğer"
                   value={inputs.otherMonthly}
+                  limits={NUMBER_INPUT_LIMITS.otherMonthly}
                   onChange={(value) => update("otherMonthly", value)}
                   isRemoved={removedFields.has("otherMonthly")}
                   onRemove={() => removeNumberField("otherMonthly")}
@@ -492,6 +523,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Yakıt / elektrik"
                   value={inputs.fuelOrElectricityMonthly}
+                  limits={NUMBER_INPUT_LIMITS.fuelOrElectricityMonthly}
                   onChange={(value) =>
                     update("fuelOrElectricityMonthly", value)
                   }
@@ -503,6 +535,7 @@ export default function Calculator() {
                 <NumberCell
                   label="Bakım ve lastik"
                   value={inputs.maintenanceMonthly}
+                  limits={NUMBER_INPUT_LIMITS.maintenanceMonthly}
                   onChange={(value) => update("maintenanceMonthly", value)}
                   isRemoved={removedFields.has("maintenanceMonthly")}
                   onRemove={() => removeNumberField("maintenanceMonthly")}
@@ -569,15 +602,57 @@ function FormSection({
   );
 }
 
+function NumberInput({
+  value,
+  limits,
+  onChange,
+  ariaLabel,
+  className,
+  step,
+}: {
+  value: number;
+  limits: NumberInputLimits;
+  onChange: (value: number) => void;
+  ariaLabel: string;
+  className?: string;
+  step?: number | "any";
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputValue = draft ?? String(value);
+  const validationResult =
+    draft === null ? null : parseNumberInput(draft, limits);
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      min={limits.min}
+      max={limits.max}
+      step={step ?? "any"}
+      aria-label={ariaLabel}
+      aria-invalid={validationResult?.isValid === false}
+      className={className}
+      value={inputValue}
+      onChange={(event) => {
+        setDraft(event.target.value);
+        onChange(parseNumberInput(event.target.value, limits).value);
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
 function NumberCell({
   label,
   value,
+  limits,
   onChange,
   isRemoved,
   onRemove,
 }: {
   label: string;
   value: number;
+  limits: NumberInputLimits;
   onChange: (value: number) => void;
   isRemoved: boolean;
   onRemove: () => void;
@@ -591,14 +666,12 @@ function NumberCell({
     <ResizableExpenseRow labelRatio={labelRatio} onLabelRatioChange={onLabelRatioChange}>
       <div className="static-expense-label">{label}</div>
       <div className="expense-value-cell">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          aria-label={label}
-          className="sheet-input expense-value-input"
+        <NumberInput
           value={value}
-          onChange={(event) => onChange(Number(event.target.value) || 0)}
+          limits={limits}
+          onChange={onChange}
+          ariaLabel={label}
+          className="sheet-input expense-value-input"
         />
         <button
           type="button"
@@ -616,11 +689,13 @@ function NumberCell({
 function RevenueNumberCell({
   label,
   value,
+  limits,
   step,
   onChange,
 }: {
   label: string;
   value: number;
+  limits: NumberInputLimits;
   step: number;
   onChange: (value: number) => void;
 }) {
@@ -633,22 +708,20 @@ function RevenueNumberCell({
     >
       <div className="static-expense-label">{label}</div>
       <div className="expense-value-cell revenue-value-cell">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step={step}
-          aria-label={label}
-          className="sheet-input expense-value-input"
+        <NumberInput
           value={value}
-          onChange={(event) => onChange(Number(event.target.value) || 0)}
+          limits={limits}
+          onChange={onChange}
+          ariaLabel={label}
+          className="sheet-input expense-value-input"
+          step={step}
         />
         <div className="stepper-controls">
           <button
             type="button"
             className="stepper-button"
             aria-label={`${label} azalt`}
-            onClick={() => onChange(adjustNumberValue(value, -1, step))}
+            onClick={() => onChange(adjustNumberValue(value, -1, step, limits))}
           >
             −
           </button>
@@ -656,7 +729,7 @@ function RevenueNumberCell({
             type="button"
             className="stepper-button"
             aria-label={`${label} artır`}
-            onClick={() => onChange(adjustNumberValue(value, 1, step))}
+            onClick={() => onChange(adjustNumberValue(value, 1, step, limits))}
           >
             +
           </button>
@@ -735,15 +808,12 @@ function ExpenseEditor({
         onChange={(label) => onChange({ label })}
       />
       <div className="expense-value-cell">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          className="sheet-input expense-value-input"
+        <NumberInput
           value={item.amount}
-          onChange={(event) =>
-            onChange({ amount: Number(event.target.value) || 0 })
-          }
+          limits={EXPENSE_AMOUNT_LIMITS}
+          onChange={(amount) => onChange({ amount })}
+          ariaLabel={"Gider tutar\u0131"}
+          className="sheet-input expense-value-input"
         />
         <button
           type="button"
@@ -778,15 +848,12 @@ function EquipmentEditor({
     >
       <div className="static-expense-label">{item.label}</div>
       <div className="expense-value-cell">
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          className="sheet-input expense-value-input"
+        <NumberInput
           value={item.amount}
-          onChange={(event) =>
-            onChange({ amount: Number(event.target.value) || 0 })
-          }
+          limits={EXPENSE_AMOUNT_LIMITS}
+          onChange={(amount) => onChange({ amount })}
+          ariaLabel={"Ekipman tutar\u0131"}
+          className="sheet-input expense-value-input"
         />
         <button
           type="button"

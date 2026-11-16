@@ -67,3 +67,22 @@ test("enabled personal expenses are included in fixed expenses", () => {
       personalExpenseTotal
   );
 });
+
+test("projection months use the shared input limits", () => {
+  const low = calculateFeasibility({
+    ...DEFAULT_INPUTS,
+    projectionMonths: -10,
+  });
+  const high = calculateFeasibility({
+    ...DEFAULT_INPUTS,
+    projectionMonths: 999,
+  });
+  const invalid = calculateFeasibility({
+    ...DEFAULT_INPUTS,
+    projectionMonths: Number.NaN,
+  });
+
+  assert.equal(low.projection.length, 2);
+  assert.equal(high.projection.length, 121);
+  assert.equal(invalid.projection.length, 2);
+});

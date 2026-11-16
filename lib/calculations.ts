@@ -4,6 +4,7 @@ import type {
   ExpenseItem,
   ProjectionPoint,
 } from "./types.ts";
+import { NUMBER_INPUT_LIMITS, normalizeNumberInput } from "./inputs.ts";
 
 export function calculateVariableExpenseDefaults(
   dailyPackages: number,
@@ -91,9 +92,11 @@ export function calculateFeasibility(
     paybackDays = Math.ceil((totalStartupCost / monthlyNetProfit) * 30);
   }
 
-  const safeProjectionMonths = Math.min(
-    120,
-    Math.max(1, Math.round(projectionMonths || 1))
+  const safeProjectionMonths = Math.round(
+    normalizeNumberInput(
+      projectionMonths,
+      NUMBER_INPUT_LIMITS.projectionMonths
+    )
   );
 
   const projection: ProjectionPoint[] = [
