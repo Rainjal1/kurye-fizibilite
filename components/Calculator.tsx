@@ -17,9 +17,10 @@ import {
 } from "@/lib/types";
 import { DEFAULT_INPUTS, VEHICLE_OPTIONS } from "@/lib/constants";
 import {
+  applyVariableExpenseDefaults,
   calculateFeasibility,
-  calculateVariableExpenseDefaults,
   formatTRY,
+  type VariableExpenseField,
 } from "@/lib/calculations";
 import { formatCompactTRY } from "@/lib/chart";
 import {
@@ -56,6 +57,8 @@ const LabelRatioContext = createContext<{
 
 export default function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
+  const [manualVariableExpenseFields, setManualVariableExpenseFields] =
+    useState<ReadonlySet<VariableExpenseField>>(new Set());
   const [theme, setTheme] = useState<Theme>("light");
   const [personalExpensesOpen, setPersonalExpensesOpen] = useState(false);
   const [chartBelowResults, setChartBelowResults] = useState(false);
@@ -69,17 +72,10 @@ export default function Calculator() {
   );
 
   useEffect(function () {
-    const defaults = calculateVariableExpenseDefaults(
-      inputs.dailyPackages,
-      inputs.workingDaysPerMonth
+    setInputs((previousInputs) =>
+      applyVariableExpenseDefaults(previousInputs, manualVariableExpenseFields)
     );
-    setInputs(function (previousInputs) {
-      return {
-        ...previousInputs,
-        ...defaults,
-      };
-    });
-  }, [inputs.dailyPackages, inputs.workingDaysPerMonth]);
+  }, [inputs.dailyPackages, inputs.workingDaysPerMonth, manualVariableExpenseFields]);
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
@@ -105,6 +101,7 @@ export default function Calculator() {
 
   function resetInputs() {
     setInputs(DEFAULT_INPUTS);
+    setManualVariableExpenseFields(new Set());
     setPersonalExpensesOpen(false);
     setSelectedVehicleId("custom");
     setRemovedFields(new Set());
@@ -143,6 +140,21 @@ export default function Calculator() {
   function updateVehicleCost(value: number) {
     setSelectedVehicleId("custom");
     update("vehicleCost", value);
+  }
+
+  function updateVariableExpense(field: VariableExpenseField, value: number) {
+    setManualVariableExpenseFields((previousFields) =>
+      new Set(previousFields).add(field)
+    );
+    update(field, value);
+  }
+
+  function resetVariableExpense(field: VariableExpenseField) {
+    setManualVariableExpenseFields((previousFields) => {
+      const nextFields = new Set(previousFields);
+      nextFields.delete(field);
+      return nextFields;
+    });
   }
 
   const chartSection = (
@@ -525,20 +537,26 @@ export default function Calculator() {
                   value={inputs.fuelOrElectricityMonthly}
                   limits={NUMBER_INPUT_LIMITS.fuelOrElectricityMonthly}
                   onChange={(value) =>
-                    update("fuelOrElectricityMonthly", value)
+                    updateVariableExpense("fuelOrElectricityMonthly", value)
                   }
                   isRemoved={removedFields.has("fuelOrElectricityMonthly")}
                   onRemove={() =>
                     removeNumberField("fuelOrElectricityMonthly")
+                  }
+                  onReset={() =>
+                    resetVariableExpense("fuelOrElectricityMonthly")
                   }
                 />
                 <NumberCell
                   label="Bakım ve lastik"
                   value={inputs.maintenanceMonthly}
                   limits={NUMBER_INPUT_LIMITS.maintenanceMonthly}
-                  onChange={(value) => update("maintenanceMonthly", value)}
+                  onChange={(value) =>
+                    updateVariableExpense("maintenanceMonthly", value)
+                  }
                   isRemoved={removedFields.has("maintenanceMonthly")}
                   onRemove={() => removeNumberField("maintenanceMonthly")}
+                  onReset={() => resetVariableExpense("maintenanceMonthly")}
                 />
               </div>
               <CustomExpenseList
@@ -649,6 +667,7 @@ function NumberCell({
   onChange,
   isRemoved,
   onRemove,
+  onReset,
 }: {
   label: string;
   value: number;
@@ -656,6 +675,7 @@ function NumberCell({
   onChange: (value: number) => void;
   isRemoved: boolean;
   onRemove: () => void;
+  onReset?: () => void;
 }) {
   const { labelRatio, onLabelRatioChange } = useContext(LabelRatioContext);
   if (isRemoved) {
@@ -673,6 +693,17 @@ function NumberCell({
           ariaLabel={label}
           className="sheet-input expense-value-input"
         />
+        {onReset ? (
+          <button
+            type="button"
+            onClick={onReset}
+            className="small-action-button sheet-remove-button"
+            aria-label={`${label} değerini otomatik hesapla`}
+            title="Otomatik hesapla"
+          >
+            ↺
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onRemove}

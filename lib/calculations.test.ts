@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateFeasibility, calculateVariableExpenseDefaults } from "./calculations.ts";
+import {
+  applyVariableExpenseDefaults,
+  calculateFeasibility,
+  calculateVariableExpenseDefaults,
+  type VariableExpenseField,
+} from "./calculations.ts";
 import { DEFAULT_INPUTS, VEHICLE_OPTIONS } from "./constants.ts";
 
 test("personal expenses are excluded by default", () => {
@@ -20,6 +25,64 @@ test("variable expense defaults scale with package count and working days", func
   assert.equal(baseDefaults.maintenanceMonthly, 1800);
   assert.equal(increasedDefaults.fuelOrElectricityMonthly, 4980);
   assert.equal(increasedDefaults.maintenanceMonthly, 1950);
+});
+
+test("automatic variable expenses follow revenue inputs", () => {
+  const result = applyVariableExpenseDefaults(
+    {
+      ...DEFAULT_INPUTS,
+      dailyPackages: 40,
+      workingDaysPerMonth: 26,
+      fuelOrElectricityMonthly: 0,
+      maintenanceMonthly: 0,
+    },
+    new Set<VariableExpenseField>()
+  );
+
+  assert.equal(result.fuelOrElectricityMonthly, 4980);
+  assert.equal(result.maintenanceMonthly, 1950);
+});
+
+test("manual fuel expense is preserved when daily packages change", () => {
+  const result = applyVariableExpenseDefaults(
+    {
+      ...DEFAULT_INPUTS,
+      dailyPackages: 40,
+      fuelOrElectricityMonthly: 5250,
+    },
+    new Set<VariableExpenseField>(["fuelOrElectricityMonthly"])
+  );
+
+  assert.equal(result.fuelOrElectricityMonthly, 5250);
+  assert.equal(result.maintenanceMonthly, 1800);
+});
+
+test("manual maintenance expense is preserved when working days change", () => {
+  const result = applyVariableExpenseDefaults(
+    {
+      ...DEFAULT_INPUTS,
+      workingDaysPerMonth: 26,
+      maintenanceMonthly: 2100,
+    },
+    new Set<VariableExpenseField>(["maintenanceMonthly"])
+  );
+
+  assert.equal(result.fuelOrElectricityMonthly, 4680);
+  assert.equal(result.maintenanceMonthly, 2100);
+});
+
+test("manual variable expenses can return to automatic defaults", () => {
+  const result = applyVariableExpenseDefaults(
+    {
+      ...DEFAULT_INPUTS,
+      fuelOrElectricityMonthly: 9999,
+      maintenanceMonthly: 8888,
+    },
+    new Set<VariableExpenseField>()
+  );
+
+  assert.equal(result.fuelOrElectricityMonthly, 4500);
+  assert.equal(result.maintenanceMonthly, 1800);
 });
 
 test("payback is reported as an exact day count", function () {

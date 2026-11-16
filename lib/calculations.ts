@@ -16,6 +16,30 @@ export function calculateVariableExpenseDefaults(
   };
 }
 
+export type VariableExpenseField =
+  | "fuelOrElectricityMonthly"
+  | "maintenanceMonthly";
+
+export function applyVariableExpenseDefaults(
+  inputs: CalculatorInputs,
+  manualFields: ReadonlySet<VariableExpenseField>
+): CalculatorInputs {
+  const defaults = calculateVariableExpenseDefaults(
+    inputs.dailyPackages,
+    inputs.workingDaysPerMonth
+  );
+
+  return {
+    ...inputs,
+    fuelOrElectricityMonthly: manualFields.has("fuelOrElectricityMonthly")
+      ? inputs.fuelOrElectricityMonthly
+      : defaults.fuelOrElectricityMonthly,
+    maintenanceMonthly: manualFields.has("maintenanceMonthly")
+      ? inputs.maintenanceMonthly
+      : defaults.maintenanceMonthly,
+  };
+}
+
 export function calculateFeasibility(
   inputs: CalculatorInputs
 ): CalculationResult {

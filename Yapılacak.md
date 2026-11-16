@@ -22,29 +22,6 @@ Bu projeyi yayına hazırlayacağız. Aşağıdaki görevleri **belirtilen sıra
 - Görev kapsamı dışındaki iyileştirmelere girişme.
 - Kod yorumları İngilizce olsun.
 
-## AŞAMA 2: Manuel Gider Girdilerinin Korunması
-
-Dosya: `components/Calculator.tsx`
-
-Tespit edilen sorun:
-Günlük paket veya aylık çalışma günü değişince yakıt ve bakım giderleri otomatik hesaplanıyor. Kullanıcının manuel düzenlediği değerler kayboluyor.
-
-Yapılacaklar:
-
-1. Otomatik hesaplanan varsayılan değerlerle kullanıcı tarafından düzenlenen değerleri birbirinden ayır.
-2. Kullanıcı manuel değer girdiğinde bu değer korunmalı.
-3. Günlük paket veya çalışma günü değiştiğinde manuel değerler ezilmemeli.
-4. Kullanıcı isterse otomatik hesaplanan varsayılan değerlere geri dönebilmeli.
-5. Mevcut form davranışını ve hesaplama mantığını koru.
-
-Testler:
-- Varsayılan otomatik değerler
-- Manuel yakıt gideri
-- Manuel bakım gideri
-- Günlük paket değişimi
-- Aylık gün değişimi
-- Manuel değerlerin korunması
-
 ## AŞAMA 3: localStorage Güvenliği
 
 Dosyalar:
