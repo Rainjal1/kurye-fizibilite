@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test": "node --experimental-strip-types --test lib/calculations.test.ts lib/chart.test.ts lib/inputs.test.ts lib/layout.test.ts",
+    "test": "node --experimental-strip-types --test lib/calculations.test.ts lib/chart.test.ts lib/inputs.test.ts lib/layout.test.ts lib/storage.test.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

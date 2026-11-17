@@ -36,14 +36,17 @@ import {
   calculateExpenseLabelRatio,
   EXPENSE_ROW_LAYOUT,
 } from "@/lib/layout";
+import {
+  readStoredTheme,
+  writeStoredTheme,
+  type Theme,
+} from "@/lib/storage";
 
 type ExpenseListKey =
   | "equipmentItems"
   | "personalExpenseItems"
   | "customFixedExpenses"
   | "customVariableExpenses";
-
-type Theme = "light" | "dark";
 
 const LabelRatioContext = createContext<{
   labelRatio: number;
@@ -79,7 +82,7 @@ export default function Calculator() {
   const result = useMemo(() => calculateFeasibility(inputs), [inputs]);
 
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem("theme") as Theme | null;
+    const storedTheme = readStoredTheme(window.localStorage);
     const initialTheme =
       storedTheme ??
       (window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -91,12 +94,10 @@ export default function Calculator() {
   }, []);
 
   function toggleTheme() {
-    setTheme((currentTheme) => {
-      const nextTheme = currentTheme === "dark" ? "light" : "dark";
-      document.documentElement.classList.toggle("dark", nextTheme === "dark");
-      window.localStorage.setItem("theme", nextTheme);
-      return nextTheme;
-    });
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    writeStoredTheme(window.localStorage, nextTheme);
   }
 
   function resetInputs() {
